@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Gamedev Workshop - lesson 10: finishing up</title>
+    <style>* { padding: 0; margin: 0; } canvas { background: #eee; display: block; margin: 0 auto; }</style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="800" height="600"></canvas>
+
+<script>
+    var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+
+    var objects = [{
+      x:canvas.width/2,
+      y:20,
+      ax : 0,
+      ay : 0.1,
+      dx : 1,
+      dy : 0,
+      color: "#0095DD",
+      radius:10
+    },
+    {
+      x:20,
+      y:20,
+      ax : 0,
+      ay : 0.1,
+      dx : 5,
+      dy : 0,
+      color: "#DD9500",
+      radius:10
+    }
+  ];
+
+
+    var rightPressed = false;
+    var leftPressed = false;
+
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+
+    function keyDownHandler(e) {
+        if(e.keyCode == 39) {
+            rightPressed = true;
+        }
+        else if(e.keyCode == 37) {
+            leftPressed = true;
+        }
+    }
+    function keyUpHandler(e) {
+        if(e.keyCode == 39) {
+            rightPressed = false;
+        }
+        else if(e.keyCode == 37) {
+            leftPressed = false;
+        }
+    }
+/*
+    document.addEventListener("mousemove", mouseMoveHandler, false);
+
+    function mouseMoveHandler(e) {
+        if(e.pageX > paddleWidth/2 && e.pageX < canvas.width-paddleWidth/2) {
+            paddleX = e.pageX-paddleWidth/2;
+        }
+    }
+*/
+
+    function drawBall(o) {
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, o.radius, 0, Math.PI*2, true);
+        ctx.fillStyle = o.color;
+        ctx.fill();
+        ctx.closePath();
+    }
+
+
+/*
+    function collisionDetection() {
+        for(c=0; c<brickColumnCount; c++) {
+            for(r=0; r<brickRowCount; r++) {
+                var b = bricks[c][r];
+                if(b.status == 1) {
+                    if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight) {
+                        dy = -dy;
+                        b.status = 0;
+                        score++;
+                        if(score == brickRowCount*brickColumnCount) {
+                            alert("YOU WIN, CONGRATS!");
+                            document.location.reload();
+                        }
+                    }
+                }
+            }
+        }
+    }*/
+
+
+    function move(o)
+    {
+      o.dx += o.ax;
+      o.dy += o.ay;
+
+      if(o.x + o.dx > canvas.width - 10 || o.x + o.dx < 10) {
+          o.dx = - 0.75 * o.dx;
+      }
+
+      if(o.y + o.dy > canvas.height - 10 || o.y + o.dy < 10) {
+          o.dy = - 0.75 * o.dy;
+      }
+
+      o.x += o.dx;
+      o.y += o.dy;
+    }
+
+    function interact(o1,o2)
+    {
+      var f = o1.radius*o1.radius*o2.radius*o2.radius;
+      f /= Math.sqrt((o1.x-o2.x)*(o1.x-o2.x) + (o1.y-o2.y)*(o1.y-o2.y));
+
+
+    }
+
+    function draw() {
+        ctx.clearRect(0,0,800,600);
+
+
+        //collisionDetection();
+
+        for(var i=0;i<objects.length;i++)
+          for(var j=0;j<objects.length;j++)
+            if(i!=j && i>=j)
+              interact(objects[i],objects[j]);
+
+        for(var x=0;x<objects.length;x++)
+        {
+          drawBall(objects[x]);
+          move(objects[x]);
+        }
+        requestAnimationFrame(draw);
+    }
+
+draw();
+</script>
+
+</body>
+</html>
