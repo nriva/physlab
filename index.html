@@ -2,18 +2,36 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Gamedev Workshop - lesson 10: finishing up</title>
+    <title>PhysLabJs</title>
     <style>* { padding: 0; margin: 0; } canvas { background: #eee; display: block; margin: 0 auto; }</style>
 </head>
 <body>
-
+<table>
+  <tr>
+    <td><button onclick="start()">Start</button>
+    <td><button  onclick="stop()">Stop</button>
+</table>
 <canvas id="myCanvas" width="800" height="600"></canvas>
 
 <script>
 
   var ELAST_COEFF = 0.75;
 
-  var stopAnimation = false;
+  var stopAnimation = true;
+
+  function start()
+  {
+    if(stopAnimation)
+    {
+      stopAnimation = false;
+      draw();
+    }
+  }
+
+  function stop()
+  {
+    stopAnimation=true;
+  }
 
   function Body(x,y,ax,ay,dx,dy,color,radius)
   {
@@ -88,8 +106,9 @@
   ];*/
 
     var objects = [];
-    objects.push(new Body(canvas.width/2,20,0, 0.1,1,0,"#0095DD",10));
-    objects.push(new Body(20,20,0, 0.1,5,0,"#DD9500",10));
+    objects.push(new Body(canvas.width/2,(canvas.height*3)/4+20,0,0,0,0,"#0095DD",40));
+    objects.push(new Body(20,20,0, 0,0.5,0,"#DD9500",10));
+    objects.push(new Body(canvas.width-30,30,0, 0,-0.5,0,"#DD0095",20));
 
 
     var rightPressed = false;
@@ -187,7 +206,7 @@
       var y = o1.y-o2.y;
 
       // Angolo del vettore f
-      var alpha = Math.atan(y/x);
+      var alpha = Math.atan(Math.abs(y/x));
 
       var f = 0.01 / Math.sqrt(x*x + y*y);
 
@@ -198,11 +217,11 @@
       var fx2 = f * Math.cos(alpha) * o1.getMass();
       var fy2 = f * Math.sin(alpha) * o1.getMass();
 
-      o1.ax = fx1;
-      o1.ay = fy1;
+      o1.ax = fx1; if(x>0) o1.ax= - o1.ax;
+      o1.ay = fy1; if(y>0) o1.ay= - o1.ay;
 
-      o2.ax = fx2;
-      o2.ay = fy2;
+      o2.ax = fx2; if(x<0) o2.ax= - o2.ax;
+      o2.ay = fy2; if(y<0) o2.ay= - o2.ay;
     }
 
     function draw() {
