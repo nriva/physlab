@@ -10,10 +10,62 @@
 <canvas id="myCanvas" width="800" height="600"></canvas>
 
 <script>
+
+  var ELAST_COEFF = 0.75;
+
+  var stopAnimation = false;
+
+  function Body(x,y,ax,ay,dx,dy,color,radius)
+  {
+    this.x=x;
+    this.y=y;
+    this._ax=ax;
+    this._ay=ay;
+    this.ax=0;
+    this.ay=0;
+
+    this.dx=dx;
+    this.dy=dy;
+    this.color=color;
+    this.radius=radius;
+
+    this.getMass = function()
+    {
+      return this.radius*this.radius;
+    }
+
+
+    this.getMomentum = function()
+    {
+      return this.getMass() * Math.sqrt(this.dx*this.dx + this.dy*this.dy);
+    }
+
+    this.move = function()
+    {
+      // Accelerazione
+      this.dx += this.ax + this._ax;
+      this.dy += this.ay + this._ay;
+
+      // Rimbalzo
+      if(this.x + this.dx > canvas.width - this.radius || this.x + this.dx < this.radius) {
+          this.dx = - ELAST_COEFF * this.dx;
+      }
+
+      if(this.y + this.dy > canvas.height - this.radius || this.y + this.dy < this.radius) {
+          this.dy = - ELAST_COEFF * this.dy;
+      }
+
+      // Spostamento
+      this.x += this.dx;
+      this.y += this.dy;
+    }
+  }
+
+
     var canvas = document.getElementById("myCanvas");
     var ctx = canvas.getContext("2d");
 
-    var objects = [{
+    /*var objects = [{
       x:canvas.width/2,
       y:20,
       ax : 0,
@@ -33,7 +85,11 @@
       color: "#DD9500",
       radius:10
     }
-  ];
+  ];*/
+
+    var objects = [];
+    objects.push(new Body(canvas.width/2,20,0, 0.1,1,0,"#0095DD",10));
+    objects.push(new Body(20,20,0, 0.1,5,0,"#DD9500",10));
 
 
     var rightPressed = false;
@@ -68,7 +124,7 @@
     }
 */
 
-    function drawBall(o) {
+    function drawObject(o) {
         ctx.beginPath();
         ctx.arc(o.x, o.y, o.radius, 0, Math.PI*2, true);
         ctx.fillStyle = o.color;
@@ -97,37 +153,60 @@
         }
     }*/
 
-
-    function move(o)
+    function collisionManagement(objects)
     {
-      o.dx += o.ax;
-      o.dy += o.ay;
+      for(var i=0;i<objects.length;i++)
+        for(var j=0;j<objects.length;j++)
+          if(i!=j && i>=j)
+          {
+            var o1 = objects[i];
+            var o2 = objects[j];
 
-      if(o.x + o.dx > canvas.width - 10 || o.x + o.dx < 10) {
-          o.dx = - 0.75 * o.dx;
-      }
+            var x = o1.x-o2.x;
+            var y = o1.y-o2.y;
 
-      if(o.y + o.dy > canvas.height - 10 || o.y + o.dy < 10) {
-          o.dy = - 0.75 * o.dy;
-      }
+            if(x*x+y*y< (o1.radius+o2.radius)*(o1.radius+o2.radius) )
+            {
+              // Collisione
+              stopAnimation = true;
 
-      o.x += o.dx;
-      o.y += o.dy;
+              var p1 = o1.getMomentum();
+              var p2 = o2.getMomentum();
+
+            }
+          }
     }
+
+
+
 
     function interact(o1,o2)
     {
-      var f = o1.radius*o1.radius*o2.radius*o2.radius;
-      f /= Math.sqrt((o1.x-o2.x)*(o1.x-o2.x) + (o1.y-o2.y)*(o1.y-o2.y));
 
+      var x = o1.x-o2.x;
+      var y = o1.y-o2.y;
 
+      // Angolo del vettore f
+      var alpha = Math.atan(y/x);
+
+      var f = 0.01 / Math.sqrt(x*x + y*y);
+
+      // componenti di f lungo gli assi
+      var fx1 = f * Math.cos(alpha) * o2.getMass();
+      var fy1 = f * Math.sin(alpha) * o2.getMass();
+
+      var fx2 = f * Math.cos(alpha) * o1.getMass();
+      var fy2 = f * Math.sin(alpha) * o1.getMass();
+
+      o1.ax = fx1;
+      o1.ay = fy1;
+
+      o2.ax = fx2;
+      o2.ay = fy2;
     }
 
     function draw() {
         ctx.clearRect(0,0,800,600);
-
-
-        //collisionDetection();
 
         for(var i=0;i<objects.length;i++)
           for(var j=0;j<objects.length;j++)
@@ -136,10 +215,14 @@
 
         for(var x=0;x<objects.length;x++)
         {
-          drawBall(objects[x]);
-          move(objects[x]);
+          objects[x].move();
+          drawObject(objects[x]);
         }
-        requestAnimationFrame(draw);
+
+        collisionManagement(objects);
+
+        if(!stopAnimation)
+          requestAnimationFrame(draw);
     }
 
 draw();
