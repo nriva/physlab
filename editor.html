@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>PhysLabJs</title>
+    <title>PhysLabJs - Editor</title>
     <style>* { padding: 0; margin: 0; } canvas { background: #eee; display: block; margin: 0 auto; }</style>
 </head>
 <body>
@@ -17,20 +17,20 @@
 
   var ELAST_COEFF = 0.75;
 
-  var stopAnimation = true;
+  var animationOn = true;
 
   function start()
   {
-    if(stopAnimation)
+    if(!animationOn)
     {
-      stopAnimation = false;
+      animationOn = true;
       draw();
     }
   }
 
   function stop()
   {
-    stopAnimation=true;
+    animationOn=false;
   }
 
   function Body(x,y,ax,ay,dx,dy,color,radius)
@@ -41,11 +41,13 @@
     this._ay=ay;
     this.ax=0;
     this.ay=0;
-
     this.dx=dx;
     this.dy=dy;
+
     this.color=color;
     this.radius=radius;
+
+    this.clicked = false;
 
     this.getMass = function()
     {
@@ -86,43 +88,19 @@
 
   }
 
-
     var canvas = document.getElementById("myCanvas");
     var ctx = canvas.getContext("2d");
-
-    /*var objects = [{
-      x:canvas.width/2,
-      y:20,
-      ax : 0,
-      ay : 0.1,
-      dx : 1,
-      dy : 0,
-      color: "#0095DD",
-      radius:10
-    },
-    {
-      x:20,
-      y:20,
-      ax : 0,
-      ay : 0.1,
-      dx : 5,
-      dy : 0,
-      color: "#DD9500",
-      radius:10
-    }
-  ];*/
-
     var objects = [];
+
     objects.push(new Body(canvas.width/2,(canvas.height*3)/4+20,0,0,0,0,"#0095DD",40));
     objects.push(new Body(20,20,0, 0,0.5,0,"#DD9500",10));
     objects.push(new Body(canvas.width-30,30,0, 0,-0.5,0,"#DD0095",20));
 
-
     var rightPressed = false;
     var leftPressed = false;
 
-    document.addEventListener("keydown", keyDownHandler, false);
-    document.addEventListener("keyup", keyUpHandler, false);
+    canvas.addEventListener("keydown", keyDownHandler, false);
+    canvas.addEventListener("keyup", keyUpHandler, false);
 
     function keyDownHandler(e) {
         if(e.keyCode == 39) {
@@ -140,21 +118,51 @@
             leftPressed = false;
         }
     }
-/*
-    document.addEventListener("mousemove", mouseMoveHandler, false);
+
+    var objectClicked = -1;
+    var objectClickedX = -1;
+    var objectClickedY = -1;
+
+    canvas.addEventListener("mousemove", mouseMoveHandler, false);
+
+    canvas.addEventListener("mousedown", mouseDownHandler, false);
 
     function mouseMoveHandler(e) {
-        if(e.pageX > paddleWidth/2 && e.pageX < canvas.width-paddleWidth/2) {
-            paddleX = e.pageX-paddleWidth/2;
+      if(objectClicked>=0 && e.button == 0)
+      {
+        objectClickedX = e.offsetX;
+        objectClickedY = e.offsetY;
+      }
+    }
+
+
+
+    function mouseDownHandler(e) {
+        objectClicked = -1;
+        for(var i=0;i<objects.length;i++)
+        {
+          //objects[i].clicked = false;
+          var d = (objects[i].x - e.offsetX) * (objects[i].x - e.offsetX) + (objects[i].y - e.offsetY) * (objects[i].y - e.offsetY);
+          if(d <= objects[i].radius * objects[i].radius )
+          {
+            objectClicked = i;
+            console.log("objectClicked = " + objectClicked);
+            break;
+          }
         }
     }
-*/
 
     function drawObject(o) {
         ctx.beginPath();
         ctx.arc(o.x, o.y, o.radius, 0, Math.PI*2, true);
+        if(o.clicked)
+        {
+          ctx.strokeStyle="red";
+          ctx.stroke();
+        }
         ctx.fillStyle = o.color;
         ctx.fill();
+
         ctx.closePath();
     }
 
@@ -179,77 +187,24 @@
         }
     }*/
 
-    function collisionManagement(objects)
-    {
-      for(var i=0;i<objects.length;i++)
-        for(var j=0;j<objects.length;j++)
-          if(i!=j && i>=j)
-          {
-            var o1 = objects[i];
-            var o2 = objects[j];
-
-            var x = o1.x-o2.x;
-            var y = o1.y-o2.y;
-
-            if(x*x+y*y< (o1.radius+o2.radius)*(o1.radius+o2.radius) )
-            {
-              // Collisione
-              stopAnimation = true;
-
-              var p1 = o1.getMomentum();
-              var p2 = o2.getMomentum();
-
-            }
-          }
-    }
-
-    function interact(o1,o2)
-    {
-
-      var x = o1.x-o2.x;
-      var y = o1.y-o2.y;
-
-      // Angolo del vettore f
-      var alpha = Math.atan(Math.abs(y/x));
-
-      var f = 0.01 / Math.sqrt(x*x + y*y);
-
-      // componenti di f lungo gli assi
-      var fx1 = f * Math.cos(alpha) * o2.getMass();
-      var fy1 = f * Math.sin(alpha) * o2.getMass();
-
-      var fx2 = f * Math.cos(alpha) * o1.getMass();
-      var fy2 = f * Math.sin(alpha) * o1.getMass();
-
-      if(x>0) fx1 = - fx1; o1.ax += fx1;
-      if(y>0) fy1 = - fy1; o1.ay += fy1;
-
-      if(x<0) fx2= - fx2; o2.ax += fx2;
-      if(y<0) fy2= - fy2; o2.ay += fy2;
-    }
-
     function draw() {
         ctx.clearRect(0,0,800,600);
 
-        for(var i=0;i<objects.length;i++)
-        {
-          objects[i].prepareForInteract();
-        }
-
-        for(i=0;i<objects.length;i++)
-          for(var j=0;j<objects.length;j++)
-            if(i!=j && i>=j)
-              interact(objects[i],objects[j]);
-
         for(var x=0;x<objects.length;x++)
         {
-          objects[x].move();
+          objects[x].clicked = objectClicked==x;
+          if(objects[x].clicked && objectClickedX>-1)
+          {
+            objects[x].x = objectClickedX;
+            objects[x].y = objectClickedY;
+
+            objectClickedX = -1;
+            objectClickedY = -1;
+          }
           drawObject(objects[x]);
         }
 
-        collisionManagement(objects);
-
-        if(!stopAnimation)
+        if(animationOn)
           requestAnimationFrame(draw);
     }
 
