@@ -17,6 +17,7 @@
 
 <table>
   <tr>
+    <td><button onclick="reset()">Reset</button>
     <td><button onclick="start()">Start</button>
     <td><button  onclick="stop()">Stop</button>
 </table>
@@ -28,7 +29,7 @@ var ELAST_COEFF = 0.75;
 var animationOn = false;
 
 var width = window.innerWidth;
-var height = window.innerHeight-50;
+var height = window.innerHeight-10;
 
 var stage = new Konva.Stage({
     container: 'container',
@@ -40,9 +41,11 @@ var layer = new Konva.Layer();
 var rectX = 20; //stage.getWidth() / 2 - 50;
 var rectY = 20; //stage.getHeight() / 2 - 25;
 
+var centerX = stage.getWidth() / 2;
+
 var grpbody1 = new Konva.Circle({
-    x: rectX,
-    y: rectY,
+    x: centerX,  //rectX,
+    y: stage.getHeight() /2 - 250, //rectY,
     radius: 10,
     fill: '#00D2FF',
     strokeWidth: 0,
@@ -50,24 +53,24 @@ var grpbody1 = new Konva.Circle({
 });
 
 var grpbody2 = new Konva.Circle({
-    x: rectX,
+    x: stage.getWidth() - 40,
     y: rectY,
-    radius: 10,
+    radius: 20,
     fill: '#D200FF',
     strokeWidth: 0,
     draggable: true
 });
 
 var grpbody3 = new Konva.Circle({
-    x: rectX,
-    y: rectY,
-    radius: 10,
+    x: centerX,
+    y: stage.getHeight()/2,
+    radius: 30,
     fill: '#D2FF00',
     strokeWidth: 0,
     draggable: true
 });
 
-var grpbodies = [grpbody1,grpbody2,grpbody3];
+
 
 // add cursor styling
 /*
@@ -96,10 +99,20 @@ grpbody.on('mouseout', function() {
     anim.stop();
   }
 
-
-
-  function Body(ax,ay,dx,dy,grpobj)
+  function reset()
   {
+    for(var i=0;i<bodies.length;i++)
+      bodies[i].reset();
+
+    stage.draw();
+  }
+
+
+
+  function Body(ax,ay,dx,dy,grpobj,density)
+  {
+    this.inix = grpobj.x();
+    this.iniy = grpobj.y();
     this._ax=ax;
     this._ay=ay;
     this.ax=0;
@@ -107,10 +120,19 @@ grpbody.on('mouseout', function() {
     this.dx=dx;
     this.dy=dy;
     this.grpobj = grpobj;
+    this.density = density;
+
+    this.radius = this.grpobj.radius();
+
+    this.w = grpobj.getStage().getWidth();
+    this.h = grpobj.getStage().getHeight();
 
     this.getMass = function()
     {
-      return this.grpobj.radius() *this.grpobj.radius();
+      var m= this.grpobj.radius() *this.grpobj.radius();
+      if(density)
+        m *= density;
+      return m;
     }
 
 
@@ -119,35 +141,51 @@ grpbody.on('mouseout', function() {
       return this.getMass() * Math.sqrt(this.dx*this.dx + this.dy*this.dy);
     }
 
+    this.x=function()
+    {
+      return grpobj.x();
+
+    }
+
+    this.y=function()
+    {
+      return grpobj.y();
+    }
+
+    this.getRadius = function ()
+    {
+      return this.radius;
+    }
+
+    this.reset = function()
+    {
+      this.grpobj.x(this.inix);
+      this.grpobj.y(this.iniy);
+      this.ax=0;
+      this.ay=0;
+    }
+
     this.move = function()
     {
       // Accelerazione
       this.dx += this.ax + this._ax;
       this.dy += this.ay + this._ay;
 
-      var x = grpobj.x();
-      var y = grpobj.y();
-      var radius = this.grpobj.radius();
-
-      var w = grpobj.getStage().getWidth();
-      var h = grpobj.getStage().getHeight();
-
-      debugger;
       // Rimbalzo
-      if(x + this.dx > w - radius || x + this.dx < radius) {
+      if(this.x() + this.dx > this.w - this.radius || this.x() + this.dx < this.radius) {
           this.dx = - ELAST_COEFF * this.dx;
       }
 
-      if(y + this.dy > h - radius || y + this.dy < radius) {
+      if(this.y() + this.dy > this.h - this.radius || this.y() + this.dy < this.radius) {
           this.dy = - ELAST_COEFF * this.dy;
       }
 
       // Spostamento
-      x += this.dx;
-      y += this.dy;
+      var _x = this.x() + this.dx;
+      var _y = this.y() + this.dy;
 
-      grpobj.x(x);
-      grpobj.y(y);
+      grpobj.x(_x);
+      grpobj.y(_y);
     }
 
     this.prepareForInteract = function()
@@ -169,13 +207,14 @@ grpbody.on('mouseout', function() {
             var o1 = objects[i];
             var o2 = objects[j];
 
-            var x = o1.x-o2.x;
-            var y = o1.y-o2.y;
+            var x = o1.x()-o2.x();
+            var y = o1.y()-o2.y();
 
-            if(x*x+y*y< (o1.radius+o2.radius)*(o1.radius+o2.radius) )
+            if(x*x+y*y< (o1.getRadius()+o2.getRadius())*(o1.getRadius()+o2.getRadius()) )
             {
               // Collisione
-              animationOn = false;
+              //animationOn = false;
+              stop();
 
               var p1 = o1.getMomentum();
               var p2 = o2.getMomentum();
@@ -187,8 +226,8 @@ grpbody.on('mouseout', function() {
     function interact(o1,o2)
     {
 
-      var x = o1.x-o2.x;
-      var y = o1.y-o2.y;
+      var x = o1.x()-o2.x();
+      var y = o1.y()-o2.y();
 
       // Angolo del vettore f
       var alpha = Math.atan(Math.abs(y/x));
@@ -210,27 +249,47 @@ grpbody.on('mouseout', function() {
     }
 
 
+
+
+    var grpbodies = [];
+    grpbodies.push(grpbody1);
+    //grpbodies.push(grpbody2);
+    grpbodies.push(grpbody3);
+
+
     for(var b=0;b<grpbodies.length;b++)
-      layer.add(grpbodies[b]);
+          layer.add(grpbodies[b]);
     stage.add(layer);
 
-    var body1 = new Body(0,0.05,0.5,0,grpbody1);
-    var body2 = new Body(0,0.05,1,0,grpbody2);
-    var body3 = new Body(0,0.05,1.5,0,grpbody3);
+    var body1 = new Body(0,0,5,0,grpbody1);
+    //var body2 = new Body(0,0,0,0,grpbody2);
+    var body3 = new Body(0,0,0,0,grpbody3, 10);
 
-    var bodies = [body1,body2,body3];
+    var bodies = [];
+    bodies.push(body1);
+    //bodies.push(body2);
+    bodies.push(body3);
 
-    var amplitude = 100;
-    var period = 2000;
-    // in ms
-    var centerX = stage.getWidth() / 2;
+
     var anim = new Konva.Animation(function(frame) {
-        if(animationOn)
-        {
-          for(var i=0;i<bodies.length;i++)
-            bodies[i].move();
-          //body.setX(amplitude * Math.sin(frame.time * 2 * Math.PI / period) + centerX);
-        }
+      collisionManagement(bodies);
+      if(animationOn)
+      {
+
+        for(var i=0;i<bodies.length;i++)
+          bodies[i].prepareForInteract();
+
+        for(var i1=0;i1<bodies.length;i1++)
+          for(var i2=0;i2<bodies.length;i2++)
+            if(i1>i2)
+            {
+              interact(bodies[i1], bodies[i2]);
+            }
+
+
+        for(var b=0;b<bodies.length;b++)
+          bodies[b].move();
+      }
     }, layer);
 
     anim.start();
