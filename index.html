@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>PhysLabJs</title>
     <style>* { padding: 0; margin: 0; } canvas { background: #eee; display: block; margin: 0 auto; }</style>
+      
 </head>
 <body>
 <table>
@@ -17,20 +18,20 @@
 
   var ELAST_COEFF = 0.75;
 
-  var stopAnimation = true;
+  var animationOn = false;
 
   function start()
   {
-    if(stopAnimation)
+    if(!animationOn)
     {
-      stopAnimation = false;
+      animationOn = true;
       draw();
     }
   }
 
   function stop()
   {
-    stopAnimation=true;
+    animationOn=false;
   }
 
   function Body(x,y,ax,ay,dx,dy,color,radius)
@@ -46,6 +47,8 @@
     this.dy=dy;
     this.color=color;
     this.radius=radius;
+
+    this.clicked = false;
 
     this.getMass = function()
     {
@@ -90,27 +93,6 @@
     var canvas = document.getElementById("myCanvas");
     var ctx = canvas.getContext("2d");
 
-    /*var objects = [{
-      x:canvas.width/2,
-      y:20,
-      ax : 0,
-      ay : 0.1,
-      dx : 1,
-      dy : 0,
-      color: "#0095DD",
-      radius:10
-    },
-    {
-      x:20,
-      y:20,
-      ax : 0,
-      ay : 0.1,
-      dx : 5,
-      dy : 0,
-      color: "#DD9500",
-      radius:10
-    }
-  ];*/
 
     var objects = [];
     objects.push(new Body(canvas.width/2,(canvas.height*3)/4+20,0,0,0,0,"#0095DD",40));
@@ -140,15 +122,7 @@
             leftPressed = false;
         }
     }
-/*
-    document.addEventListener("mousemove", mouseMoveHandler, false);
 
-    function mouseMoveHandler(e) {
-        if(e.pageX > paddleWidth/2 && e.pageX < canvas.width-paddleWidth/2) {
-            paddleX = e.pageX-paddleWidth/2;
-        }
-    }
-*/
 
     function drawObject(o) {
         ctx.beginPath();
@@ -158,26 +132,6 @@
         ctx.closePath();
     }
 
-
-/*
-    function collisionDetection() {
-        for(c=0; c<brickColumnCount; c++) {
-            for(r=0; r<brickRowCount; r++) {
-                var b = bricks[c][r];
-                if(b.status == 1) {
-                    if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight) {
-                        dy = -dy;
-                        b.status = 0;
-                        score++;
-                        if(score == brickRowCount*brickColumnCount) {
-                            alert("YOU WIN, CONGRATS!");
-                            document.location.reload();
-                        }
-                    }
-                }
-            }
-        }
-    }*/
 
     function collisionManagement(objects)
     {
@@ -194,7 +148,7 @@
             if(x*x+y*y< (o1.radius+o2.radius)*(o1.radius+o2.radius) )
             {
               // Collisione
-              stopAnimation = true;
+              animationOn = false;
 
               var p1 = o1.getMomentum();
               var p2 = o2.getMomentum();
@@ -249,7 +203,7 @@
 
         collisionManagement(objects);
 
-        if(!stopAnimation)
+        if(animationOn)
           requestAnimationFrame(draw);
     }
 
