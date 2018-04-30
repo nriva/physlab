@@ -3,62 +3,166 @@
 <head>
     <meta charset="utf-8" />
     <title>PhysLabJs</title>
-    <style>* { padding: 0; margin: 0; } canvas { background: #eee; display: block; margin: 0 auto; }</style>
-      
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #F0F0F0;
+        }
+    </style>
+<script src="https://cdn.rawgit.com/konvajs/konva/2.0.3/konva.min.js"></script>
 </head>
 <body>
+
 <table>
   <tr>
+    <td><button onclick="reset()">Reset</button>
     <td><button onclick="start()">Start</button>
     <td><button  onclick="stop()">Stop</button>
 </table>
-<canvas id="myCanvas" width="800" height="600"></canvas>
-
+  <div id="container"></div>
 <script>
 
-  var ELAST_COEFF = 0.75;
+var ELAST_COEFF = 0.75;
 
-  var animationOn = false;
+var animationOn = false;
+
+var width = window.innerWidth;
+var height = window.innerHeight-10;
+
+var stage = new Konva.Stage({
+    container: 'container',
+    width: width,
+    height: height
+});
+
+var layer = new Konva.Layer();
+var rectX = 20; //stage.getWidth() / 2 - 50;
+var rectY = 20; //stage.getHeight() / 2 - 25;
+
+var centerX = stage.getWidth() / 2;
+
+var grpbody1 = new Konva.Circle({
+    x: centerX,  //rectX,
+    y: stage.getHeight() /2 - 250, //rectY,
+    radius: 10,
+    fill: '#00D2FF',
+    strokeWidth: 0,
+    draggable: true
+});
+
+var grpbody2 = new Konva.Circle({
+    x: stage.getWidth() - 40,
+    y: rectY,
+    radius: 20,
+    fill: '#D200FF',
+    strokeWidth: 0,
+    draggable: true
+});
+
+var grpbody3 = new Konva.Circle({
+    x: centerX,
+    y: stage.getHeight()/2,
+    radius: 30,
+    fill: '#D2FF00',
+    strokeWidth: 0,
+    draggable: true
+});
+
+
+
+// add cursor styling
+/*
+grpbody.on('mouseover', function() {
+    document.body.style.cursor = 'pointer';
+});
+grpbody.on('mouseout', function() {
+    document.body.style.cursor = 'default';
+});
+*/
+
+
 
   function start()
   {
     if(!animationOn)
     {
       animationOn = true;
-      draw();
+      anim.start();
     }
   }
 
   function stop()
   {
     animationOn=false;
+    anim.stop();
   }
 
-  function Body(x,y,ax,ay,dx,dy,color,radius)
+  function reset()
   {
-    this.x=x;
-    this.y=y;
+    for(var i=0;i<bodies.length;i++)
+      bodies[i].reset();
+
+    stage.draw();
+  }
+
+
+
+  function Body(ax,ay,dx,dy,grpobj,density)
+  {
+    this.inix = grpobj.x();
+    this.iniy = grpobj.y();
     this._ax=ax;
     this._ay=ay;
     this.ax=0;
     this.ay=0;
-
     this.dx=dx;
     this.dy=dy;
-    this.color=color;
-    this.radius=radius;
+    this.grpobj = grpobj;
+    this.density = density;
 
-    this.clicked = false;
+    this.radius = this.grpobj.radius();
+
+    this.w = grpobj.getStage().getWidth();
+    this.h = grpobj.getStage().getHeight();
 
     this.getMass = function()
     {
-      return this.radius*this.radius;
+      var m= this.grpobj.radius() *this.grpobj.radius();
+      if(density)
+        m *= density;
+      return m;
     }
 
 
     this.getMomentum = function()
     {
       return this.getMass() * Math.sqrt(this.dx*this.dx + this.dy*this.dy);
+    }
+
+    this.x=function()
+    {
+      return grpobj.x();
+
+    }
+
+    this.y=function()
+    {
+      return grpobj.y();
+    }
+
+    this.getRadius = function ()
+    {
+      return this.radius;
+    }
+
+    this.reset = function()
+    {
+      this.grpobj.x(this.inix);
+      this.grpobj.y(this.iniy);
+      this.ax=0;
+      this.ay=0;
     }
 
     this.move = function()
@@ -68,17 +172,20 @@
       this.dy += this.ay + this._ay;
 
       // Rimbalzo
-      if(this.x + this.dx > canvas.width - this.radius || this.x + this.dx < this.radius) {
+      if(this.x() + this.dx > this.w - this.radius || this.x() + this.dx < this.radius) {
           this.dx = - ELAST_COEFF * this.dx;
       }
 
-      if(this.y + this.dy > canvas.height - this.radius || this.y + this.dy < this.radius) {
+      if(this.y() + this.dy > this.h - this.radius || this.y() + this.dy < this.radius) {
           this.dy = - ELAST_COEFF * this.dy;
       }
 
       // Spostamento
-      this.x += this.dx;
-      this.y += this.dy;
+      var _x = this.x() + this.dx;
+      var _y = this.y() + this.dy;
+
+      grpobj.x(_x);
+      grpobj.y(_y);
     }
 
     this.prepareForInteract = function()
@@ -90,48 +197,6 @@
   }
 
 
-    var canvas = document.getElementById("myCanvas");
-    var ctx = canvas.getContext("2d");
-
-
-    var objects = [];
-    objects.push(new Body(canvas.width/2,(canvas.height*3)/4+20,0,0,0,0,"#0095DD",40));
-    objects.push(new Body(20,20,0, 0,0.5,0,"#DD9500",10));
-    objects.push(new Body(canvas.width-30,30,0, 0,-0.5,0,"#DD0095",20));
-
-
-    var rightPressed = false;
-    var leftPressed = false;
-
-    document.addEventListener("keydown", keyDownHandler, false);
-    document.addEventListener("keyup", keyUpHandler, false);
-
-    function keyDownHandler(e) {
-        if(e.keyCode == 39) {
-            rightPressed = true;
-        }
-        else if(e.keyCode == 37) {
-            leftPressed = true;
-        }
-    }
-    function keyUpHandler(e) {
-        if(e.keyCode == 39) {
-            rightPressed = false;
-        }
-        else if(e.keyCode == 37) {
-            leftPressed = false;
-        }
-    }
-
-
-    function drawObject(o) {
-        ctx.beginPath();
-        ctx.arc(o.x, o.y, o.radius, 0, Math.PI*2, true);
-        ctx.fillStyle = o.color;
-        ctx.fill();
-        ctx.closePath();
-    }
-
 
     function collisionManagement(objects)
     {
@@ -142,13 +207,14 @@
             var o1 = objects[i];
             var o2 = objects[j];
 
-            var x = o1.x-o2.x;
-            var y = o1.y-o2.y;
+            var x = o1.x()-o2.x();
+            var y = o1.y()-o2.y();
 
-            if(x*x+y*y< (o1.radius+o2.radius)*(o1.radius+o2.radius) )
+            if(x*x+y*y< (o1.getRadius()+o2.getRadius())*(o1.getRadius()+o2.getRadius()) )
             {
               // Collisione
-              animationOn = false;
+              //animationOn = false;
+              stop();
 
               var p1 = o1.getMomentum();
               var p2 = o2.getMomentum();
@@ -160,8 +226,8 @@
     function interact(o1,o2)
     {
 
-      var x = o1.x-o2.x;
-      var y = o1.y-o2.y;
+      var x = o1.x()-o2.x();
+      var y = o1.y()-o2.y();
 
       // Angolo del vettore f
       var alpha = Math.atan(Math.abs(y/x));
@@ -182,32 +248,51 @@
       if(y<0) fy2= - fy2; o2.ay += fy2;
     }
 
-    function draw() {
-        ctx.clearRect(0,0,800,600);
 
-        for(var i=0;i<objects.length;i++)
-        {
-          objects[i].prepareForInteract();
-        }
 
-        for(i=0;i<objects.length;i++)
-          for(var j=0;j<objects.length;j++)
-            if(i!=j && i>=j)
-              interact(objects[i],objects[j]);
 
-        for(var x=0;x<objects.length;x++)
-        {
-          objects[x].move();
-          drawObject(objects[x]);
-        }
+    var grpbodies = [];
+    grpbodies.push(grpbody1);
+    //grpbodies.push(grpbody2);
+    grpbodies.push(grpbody3);
 
-        collisionManagement(objects);
 
-        if(animationOn)
-          requestAnimationFrame(draw);
-    }
+    for(var b=0;b<grpbodies.length;b++)
+          layer.add(grpbodies[b]);
+    stage.add(layer);
 
-draw();
+    var body1 = new Body(0,0,5,0,grpbody1);
+    //var body2 = new Body(0,0,0,0,grpbody2);
+    var body3 = new Body(0,0,0,0,grpbody3, 10);
+
+    var bodies = [];
+    bodies.push(body1);
+    //bodies.push(body2);
+    bodies.push(body3);
+
+
+    var anim = new Konva.Animation(function(frame) {
+      collisionManagement(bodies);
+      if(animationOn)
+      {
+
+        for(var i=0;i<bodies.length;i++)
+          bodies[i].prepareForInteract();
+
+        for(var i1=0;i1<bodies.length;i1++)
+          for(var i2=0;i2<bodies.length;i2++)
+            if(i1>i2)
+            {
+              interact(bodies[i1], bodies[i2]);
+            }
+
+
+        for(var b=0;b<bodies.length;b++)
+          bodies[b].move();
+      }
+    }, layer);
+
+    anim.start();
 </script>
 
 </body>
