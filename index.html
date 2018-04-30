@@ -3,56 +3,114 @@
 <head>
     <meta charset="utf-8" />
     <title>PhysLabJs</title>
-    <style>* { padding: 0; margin: 0; } canvas { background: #eee; display: block; margin: 0 auto; }</style>
-      
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #F0F0F0;
+        }
+    </style>
+<script src="https://cdn.rawgit.com/konvajs/konva/2.0.3/konva.min.js"></script>
 </head>
 <body>
+
 <table>
   <tr>
     <td><button onclick="start()">Start</button>
     <td><button  onclick="stop()">Stop</button>
 </table>
-<canvas id="myCanvas" width="800" height="600"></canvas>
-
+  <div id="container"></div>
 <script>
 
-  var ELAST_COEFF = 0.75;
+var ELAST_COEFF = 0.75;
 
-  var animationOn = false;
+var animationOn = false;
+
+var width = window.innerWidth;
+var height = window.innerHeight-50;
+
+var stage = new Konva.Stage({
+    container: 'container',
+    width: width,
+    height: height
+});
+
+var layer = new Konva.Layer();
+var rectX = 20; //stage.getWidth() / 2 - 50;
+var rectY = 20; //stage.getHeight() / 2 - 25;
+
+var grpbody1 = new Konva.Circle({
+    x: rectX,
+    y: rectY,
+    radius: 10,
+    fill: '#00D2FF',
+    strokeWidth: 0,
+    draggable: true
+});
+
+var grpbody2 = new Konva.Circle({
+    x: rectX,
+    y: rectY,
+    radius: 10,
+    fill: '#D200FF',
+    strokeWidth: 0,
+    draggable: true
+});
+
+var grpbody3 = new Konva.Circle({
+    x: rectX,
+    y: rectY,
+    radius: 10,
+    fill: '#D2FF00',
+    strokeWidth: 0,
+    draggable: true
+});
+
+var grpbodies = [grpbody1,grpbody2,grpbody3];
+
+// add cursor styling
+/*
+grpbody.on('mouseover', function() {
+    document.body.style.cursor = 'pointer';
+});
+grpbody.on('mouseout', function() {
+    document.body.style.cursor = 'default';
+});
+*/
+
+
 
   function start()
   {
     if(!animationOn)
     {
       animationOn = true;
-      draw();
+      anim.start();
     }
   }
 
   function stop()
   {
     animationOn=false;
+    anim.stop();
   }
 
-  function Body(x,y,ax,ay,dx,dy,color,radius)
+
+
+  function Body(ax,ay,dx,dy,grpobj)
   {
-    this.x=x;
-    this.y=y;
     this._ax=ax;
     this._ay=ay;
     this.ax=0;
     this.ay=0;
-
     this.dx=dx;
     this.dy=dy;
-    this.color=color;
-    this.radius=radius;
-
-    this.clicked = false;
+    this.grpobj = grpobj;
 
     this.getMass = function()
     {
-      return this.radius*this.radius;
+      return this.grpobj.radius() *this.grpobj.radius();
     }
 
 
@@ -67,18 +125,29 @@
       this.dx += this.ax + this._ax;
       this.dy += this.ay + this._ay;
 
+      var x = grpobj.x();
+      var y = grpobj.y();
+      var radius = this.grpobj.radius();
+
+      var w = grpobj.getStage().getWidth();
+      var h = grpobj.getStage().getHeight();
+
+      debugger;
       // Rimbalzo
-      if(this.x + this.dx > canvas.width - this.radius || this.x + this.dx < this.radius) {
+      if(x + this.dx > w - radius || x + this.dx < radius) {
           this.dx = - ELAST_COEFF * this.dx;
       }
 
-      if(this.y + this.dy > canvas.height - this.radius || this.y + this.dy < this.radius) {
+      if(y + this.dy > h - radius || y + this.dy < radius) {
           this.dy = - ELAST_COEFF * this.dy;
       }
 
       // Spostamento
-      this.x += this.dx;
-      this.y += this.dy;
+      x += this.dx;
+      y += this.dy;
+
+      grpobj.x(x);
+      grpobj.y(y);
     }
 
     this.prepareForInteract = function()
@@ -89,48 +158,6 @@
 
   }
 
-
-    var canvas = document.getElementById("myCanvas");
-    var ctx = canvas.getContext("2d");
-
-
-    var objects = [];
-    objects.push(new Body(canvas.width/2,(canvas.height*3)/4+20,0,0,0,0,"#0095DD",40));
-    objects.push(new Body(20,20,0, 0,0.5,0,"#DD9500",10));
-    objects.push(new Body(canvas.width-30,30,0, 0,-0.5,0,"#DD0095",20));
-
-
-    var rightPressed = false;
-    var leftPressed = false;
-
-    document.addEventListener("keydown", keyDownHandler, false);
-    document.addEventListener("keyup", keyUpHandler, false);
-
-    function keyDownHandler(e) {
-        if(e.keyCode == 39) {
-            rightPressed = true;
-        }
-        else if(e.keyCode == 37) {
-            leftPressed = true;
-        }
-    }
-    function keyUpHandler(e) {
-        if(e.keyCode == 39) {
-            rightPressed = false;
-        }
-        else if(e.keyCode == 37) {
-            leftPressed = false;
-        }
-    }
-
-
-    function drawObject(o) {
-        ctx.beginPath();
-        ctx.arc(o.x, o.y, o.radius, 0, Math.PI*2, true);
-        ctx.fillStyle = o.color;
-        ctx.fill();
-        ctx.closePath();
-    }
 
 
     function collisionManagement(objects)
@@ -182,32 +209,31 @@
       if(y<0) fy2= - fy2; o2.ay += fy2;
     }
 
-    function draw() {
-        ctx.clearRect(0,0,800,600);
 
-        for(var i=0;i<objects.length;i++)
-        {
-          objects[i].prepareForInteract();
-        }
+    for(var b=0;b<grpbodies.length;b++)
+      layer.add(grpbodies[b]);
+    stage.add(layer);
 
-        for(i=0;i<objects.length;i++)
-          for(var j=0;j<objects.length;j++)
-            if(i!=j && i>=j)
-              interact(objects[i],objects[j]);
+    var body1 = new Body(0,0.05,0.5,0,grpbody1);
+    var body2 = new Body(0,0.05,1,0,grpbody2);
+    var body3 = new Body(0,0.05,1.5,0,grpbody3);
 
-        for(var x=0;x<objects.length;x++)
-        {
-          objects[x].move();
-          drawObject(objects[x]);
-        }
+    var bodies = [body1,body2,body3];
 
-        collisionManagement(objects);
-
+    var amplitude = 100;
+    var period = 2000;
+    // in ms
+    var centerX = stage.getWidth() / 2;
+    var anim = new Konva.Animation(function(frame) {
         if(animationOn)
-          requestAnimationFrame(draw);
-    }
+        {
+          for(var i=0;i<bodies.length;i++)
+            bodies[i].move();
+          //body.setX(amplitude * Math.sin(frame.time * 2 * Math.PI / period) + centerX);
+        }
+    }, layer);
 
-draw();
+    anim.start();
 </script>
 
 </body>
