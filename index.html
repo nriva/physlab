@@ -52,6 +52,18 @@ var grpbody1 = new Konva.Circle({
     draggable: true
 });
 
+var acc1 = new Konva.Line({
+    points: [0,0,0,0],
+    stroke:'#EE0000',
+    draggable: false
+});
+
+var spd1 = new Konva.Line({
+    points: [0,0,0,0],
+    stroke:'#000000',
+    draggable: false
+});
+
 var grpbody2 = new Konva.Circle({
     x: stage.getWidth() - 40,
     y: rectY,
@@ -61,6 +73,19 @@ var grpbody2 = new Konva.Circle({
     draggable: true
 });
 
+var acc2 = new Konva.Line({
+    points: [0,0,0,0],
+    stroke:'#EE0000',
+    draggable: false
+});
+
+var spd2 = new Konva.Line({
+    points: [0,0,0,0],
+    stroke:'#000000',
+    draggable: false
+});
+
+
 var grpbody3 = new Konva.Circle({
     x: centerX,
     y: stage.getHeight()/2,
@@ -68,6 +93,24 @@ var grpbody3 = new Konva.Circle({
     fill: '#D2FF00',
     strokeWidth: 0,
     draggable: true
+});
+
+var acc3 = new Konva.Line({
+    points: [0,0,0,0],
+    stroke:'#EE0000',
+    draggable: false
+});
+
+var spd3 = new Konva.Line({
+    points: [0,0,0,0],
+    stroke:'#000000',
+    draggable: false
+});
+
+var line = new Konva.Line({
+    points: [10,10,100,100],
+    stroke:'#000000',
+    draggable: false
 });
 
 
@@ -109,23 +152,28 @@ grpbody.on('mouseout', function() {
 
 
 
-  function Body(ax,ay,dx,dy,grpobj,density)
+  function Body(ax,ay,dx,dy,density,grpobjs)
   {
-    this.inix = grpobj.x();
-    this.iniy = grpobj.y();
+
+    this.grpobj = grpobjs.body;
+    this.acc = grpobjs.acc;
+    this.spd = grpobjs.spd;
+
+    this.inix = this.grpobj.x();
+    this.iniy = this.grpobj.y();
     this._ax=ax;
     this._ay=ay;
     this.ax=0;
     this.ay=0;
     this.dx=dx;
     this.dy=dy;
-    this.grpobj = grpobj;
+
     this.density = density;
 
     this.radius = this.grpobj.radius();
 
-    this.w = grpobj.getStage().getWidth();
-    this.h = grpobj.getStage().getHeight();
+    this.w = this.grpobj.getStage().getWidth();
+    this.h = this.grpobj.getStage().getHeight();
 
     this.getMass = function()
     {
@@ -143,13 +191,13 @@ grpbody.on('mouseout', function() {
 
     this.x=function()
     {
-      return grpobj.x();
+      return this.grpobj.x();
 
     }
 
     this.y=function()
     {
-      return grpobj.y();
+      return this.grpobj.y();
     }
 
     this.getRadius = function ()
@@ -184,8 +232,10 @@ grpbody.on('mouseout', function() {
       var _x = this.x() + this.dx;
       var _y = this.y() + this.dy;
 
-      grpobj.x(_x);
-      grpobj.y(_y);
+      this.grpobj.x(_x);
+      this.grpobj.y(_y);
+
+      this.setVectors();
     }
 
     this.prepareForInteract = function()
@@ -193,6 +243,17 @@ grpbody.on('mouseout', function() {
       this.ax=0;
       this.ay=0;
     }
+
+    this.setVectors = function()
+    {
+      var f = 10;
+      var x = this.grpobj.x();
+      var y = this.grpobj.y();
+      this.spd.points([x,y, x+this.dx*f, y+this.dy*f]);
+      this.acc.points([x,y, x+this.ax*f*10, y+this.ay*f*10]);
+
+    }
+
 
   }
 
@@ -254,16 +315,21 @@ grpbody.on('mouseout', function() {
     var grpbodies = [];
     grpbodies.push(grpbody1);
     //grpbodies.push(grpbody2);
+    grpbodies.push(acc1);
+    grpbodies.push(spd1);
     grpbodies.push(grpbody3);
+    grpbodies.push(acc3);
+    grpbodies.push(spd3);
 
 
     for(var b=0;b<grpbodies.length;b++)
           layer.add(grpbodies[b]);
+
     stage.add(layer);
 
-    var body1 = new Body(0,0,5,0,grpbody1);
+    var body1 = new Body(0,0,5,0,1,{body:grpbody1,acc:acc1,spd:spd1});
     //var body2 = new Body(0,0,0,0,grpbody2);
-    var body3 = new Body(0,0,0,0,grpbody3, 10);
+    var body3 = new Body(0,0,0,0,10,{body:grpbody3,acc:acc3,spd:spd3});
 
     var bodies = [];
     bodies.push(body1);
@@ -288,7 +354,9 @@ grpbody.on('mouseout', function() {
 
 
         for(var b=0;b<bodies.length;b++)
+        {
           bodies[b].move();
+        }
       }
     }, layer);
 
