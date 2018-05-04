@@ -12,21 +12,37 @@
         }
     </style>
 <script src="https://cdn.rawgit.com/konvajs/konva/2.0.3/konva.min.js"></script>
+<script src="js/body.js"></script>
 </head>
 <body>
 
-<table>
-  <tr>
-    <td><button onclick="reset()">Reset</button>
-    <td><button onclick="start()">Start</button>
-    <td><button  onclick="stop()">Stop</button>
-</table>
+<div id=toolbar>
+<span><button onclick="reset()">Reset</button>
+<span><button onclick="start()">Start</button>
+<span><button  onclick="stop()">Stop</button>
+<span><button  onclick="addNew()">+</button>
+<span style="display:none" id="newbodyprops">
+<label id=lblRadius for=inRadius>Raggio:</label>
+<input type="text" id=inRadius name=inRadius value="10" size="5">
+<label id=lblDensity for=inDensity>Densità:</label>
+<input type="text" id=inDensity name=inDensity value="1" size="5">
+<label>Accelerazione:</label>
+<input type="text" id=inAx name=inAx value="0" size="5">
+<input type="text" id=inAy name=inAy value="0" size="5">
+<label>Velocità:</label>
+<input type="text" id=inDx name=inDx value="0" size="5">
+<input type="text" id=inDy name=inDy value="0" size="5">
+<label id=lblColor for="inColor">Colore:</label><input type="color" id="inColor" name="inColor">
+<button onclick="confirmNew()">Conferma</button> 
+<button onclick="cancelNew()">Annulla</button></span>
+</div>
   <div id="container"></div>
 <script>
 
 var ELAST_COEFF = 0.75;
 
 var animationOn = false;
+var inEdit = false;
 
 var width = window.innerWidth;
 var height = window.innerHeight-10;
@@ -38,11 +54,15 @@ var stage = new Konva.Stage({
 });
 
 var layer = new Konva.Layer();
+stage.add(layer);
 var rectX = 20; //stage.getWidth() / 2 - 50;
 var rectY = 20; //stage.getHeight() / 2 - 25;
 
 var centerX = stage.getWidth() / 2;
+var centerY = stage.getHeight() / 2;
 
+
+/*
 var grpbody1 = new Konva.Circle({
     x: centerX,  //rectX,
     y: stage.getHeight() /2 - 250, //rectY,
@@ -106,13 +126,7 @@ var spd3 = new Konva.Line({
     stroke:'#000000',
     draggable: false
 });
-
-var line = new Konva.Line({
-    points: [10,10,100,100],
-    stroke:'#000000',
-    draggable: false
-});
-
+*/
 
 
 // add cursor styling
@@ -149,170 +163,83 @@ grpbody.on('mouseout', function() {
 
     stage.draw();
   }
-
-
-
-  function Body(ax,ay,dx,dy,density,grpobjs)
+  
+  function cancelNew()
   {
-
-    this.grpobj = grpobjs.body;
-    this.acc = grpobjs.acc;
-    this.spd = grpobjs.spd;
-
-    this.inix = this.grpobj.x();
-    this.iniy = this.grpobj.y();
-    this._ax=ax;
-    this._ay=ay;
-    this.ax=0;
-    this.ay=0;
-    this.dx=dx;
-    this.dy=dy;
-
-    this.density = density;
-
-    this.radius = this.grpobj.radius();
-
-    this.w = this.grpobj.getStage().getWidth();
-    this.h = this.grpobj.getStage().getHeight();
-
-    this.getMass = function()
-    {
-      var m= this.grpobj.radius() *this.grpobj.radius();
-      if(density)
-        m *= density;
-      return m;
-    }
-
-
-    this.getMomentum = function()
-    {
-      return this.getMass() * Math.sqrt(this.dx*this.dx + this.dy*this.dy);
-    }
-
-    this.x=function()
-    {
-      return this.grpobj.x();
-
-    }
-
-    this.y=function()
-    {
-      return this.grpobj.y();
-    }
-
-    this.getRadius = function ()
-    {
-      return this.radius;
-    }
-
-    this.reset = function()
-    {
-      this.grpobj.x(this.inix);
-      this.grpobj.y(this.iniy);
-      this.ax=0;
-      this.ay=0;
-    }
-
-    this.move = function()
-    {
-      // Accelerazione
-      this.dx += this.ax + this._ax;
-      this.dy += this.ay + this._ay;
-
-      // Rimbalzo
-      if(this.x() + this.dx > this.w - this.radius || this.x() + this.dx < this.radius) {
-          this.dx = - ELAST_COEFF * this.dx;
-      }
-
-      if(this.y() + this.dy > this.h - this.radius || this.y() + this.dy < this.radius) {
-          this.dy = - ELAST_COEFF * this.dy;
-      }
-
-      // Spostamento
-      var _x = this.x() + this.dx;
-      var _y = this.y() + this.dy;
-
-      this.grpobj.x(_x);
-      this.grpobj.y(_y);
-
-      this.setVectors();
-    }
-
-    this.prepareForInteract = function()
-    {
-      this.ax=0;
-      this.ay=0;
-    }
-
-    this.setVectors = function()
-    {
-      var f = 10;
-      var x = this.grpobj.x();
-      var y = this.grpobj.y();
-      this.spd.points([x,y, x+this.dx*f, y+this.dy*f]);
-      this.acc.points([x,y, x+this.ax*f*10, y+this.ay*f*10]);
-
-    }
-
-
+    inEdit = false;
+    document.getElementById("newbodyprops").style="display:none";
+    document.getElementById("inRadius").value="10";
+    document.getElementById("inAx").value="0";
+    document.getElementById("inAy").value="0";
+    document.getElementById("inDx").value="0";
+    document.getElementById("inDy").value="0";
+    document.getElementById("inDensity").value="1";
+    
   }
 
+  function confirmNew()
+  {
+
+    var radius = Number(document.getElementById("inRadius").value);
+    var ax = Number(document.getElementById("inAx").value);
+    var ay = Number(document.getElementById("inAy").value);
+    var dx = Number(document.getElementById("inDx").value);
+    var dy = Number(document.getElementById("inDy").value);
+    var density = Number(document.getElementById("inDensity").value);
+
+    var color = document.getElementById("inColor").value;
 
 
-    function collisionManagement(objects)
+    var grpbody1 = new Konva.Circle({
+    x: centerX, 
+    y: centerY,
+    radius: radius,
+    fill: color,// '#00D2FF',
+    strokeWidth: 0,
+    draggable: true
+    });
+
+    
+
+    var acc1 = new Konva.Line({
+        points: [0,0,0,0],
+        stroke:'#EE0000',
+        draggable: false
+    });
+
+    var spd1 = new Konva.Line({
+        points: [0,0,0,0],
+        stroke:'#000000',
+        draggable: false
+    });
+
+    layer.add(grpbody1);
+    layer.add(acc1);
+    layer.add(spd1);
+    var body1 = new Body(ax,ay,dx,dy,density,{body:grpbody1,acc:acc1,spd:spd1});
+
+    bodies.push(body1);
+
+    grpbody1.on("dragend", function()
     {
-      for(var i=0;i<objects.length;i++)
-        for(var j=0;j<objects.length;j++)
-          if(i!=j && i>=j)
-          {
-            var o1 = objects[i];
-            var o2 = objects[j];
+      body1.resetInitPos();
+    }); 
 
-            var x = o1.x()-o2.x();
-            var y = o1.y()-o2.y();
+    cancelNew();
+    stage.draw();
+  }
 
-            if(x*x+y*y< (o1.getRadius()+o2.getRadius())*(o1.getRadius()+o2.getRadius()) )
-            {
-              // Collisione
-              //animationOn = false;
-              stop();
+  function addNew()
+  {
+    document.getElementById("newbodyprops").style="display:inline";
+    inEdit = true;
+  }
 
-              var p1 = o1.getMomentum();
-              var p2 = o2.getMomentum();
+    //var grpbodies = [];
+    var bodies = [];
+    
 
-            }
-          }
-    }
-
-    function interact(o1,o2)
-    {
-
-      var x = o1.x()-o2.x();
-      var y = o1.y()-o2.y();
-
-      // Angolo del vettore f
-      var alpha = Math.atan(Math.abs(y/x));
-
-      var f = 0.01 / Math.sqrt(x*x + y*y);
-
-      // componenti di f lungo gli assi
-      var fx1 = f * Math.cos(alpha) * o2.getMass();
-      var fy1 = f * Math.sin(alpha) * o2.getMass();
-
-      var fx2 = f * Math.cos(alpha) * o1.getMass();
-      var fy2 = f * Math.sin(alpha) * o1.getMass();
-
-      if(x>0) fx1 = - fx1; o1.ax += fx1;
-      if(y>0) fy1 = - fy1; o1.ay += fy1;
-
-      if(x<0) fx2= - fx2; o2.ax += fx2;
-      if(y<0) fy2= - fy2; o2.ay += fy2;
-    }
-
-
-
-
-    var grpbodies = [];
+    /*
     grpbodies.push(grpbody1);
     //grpbodies.push(grpbody2);
     grpbodies.push(acc1);
@@ -324,34 +251,28 @@ grpbody.on('mouseout', function() {
 
     for(var b=0;b<grpbodies.length;b++)
           layer.add(grpbodies[b]);
+    */
 
-    stage.add(layer);
-
+/*
     var body1 = new Body(0,0,5,0,1,{body:grpbody1,acc:acc1,spd:spd1});
-    //var body2 = new Body(0,0,0,0,grpbody2);
+    var body2 = new Body(0,0,0,0,grpbody2);
     var body3 = new Body(0,0,0,0,10,{body:grpbody3,acc:acc3,spd:spd3});
 
-    var bodies = [];
+
     bodies.push(body1);
     //bodies.push(body2);
     bodies.push(body3);
-
+*/
 
     var anim = new Konva.Animation(function(frame) {
-      collisionManagement(bodies);
+      collisionManagement(bodies, stop);
       if(animationOn)
       {
 
         for(var i=0;i<bodies.length;i++)
           bodies[i].prepareForInteract();
 
-        for(var i1=0;i1<bodies.length;i1++)
-          for(var i2=0;i2<bodies.length;i2++)
-            if(i1>i2)
-            {
-              interact(bodies[i1], bodies[i2]);
-            }
-
+       interaction(bodies);
 
         for(var b=0;b<bodies.length;b++)
         {
@@ -360,7 +281,7 @@ grpbody.on('mouseout', function() {
       }
     }, layer);
 
-    anim.start();
+    //anim.start();
 </script>
 
 </body>
