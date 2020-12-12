@@ -68,6 +68,9 @@ function Body(ax,ay,dx,dy,density,grpobjs)
     this.ay=0;
     this.dx=this._dx;
     this.dy=this._dy;
+
+    this.spd.points([0,0,0,0]);
+    this.acc.points([0,0,0,0]);
   }
 
   this.move = function()
