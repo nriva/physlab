@@ -1,0 +1,25 @@
+{
+  "name": "physlab",
+  "version": "0.1.0",
+  "description": "",
+  "main": "main.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nriva/physlab.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nriva/physlab/issues"
+  },
+  "homepage": "https://github.com/nriva/physlab#readme",
+  "devDependencies": {
+    "electron": "^1.8.4"
+  }
+}
