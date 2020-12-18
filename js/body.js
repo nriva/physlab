@@ -1,5 +1,10 @@
-function Body(ax,ay,dx,dy,density,grpobjs)
+function Body(ax,ay,dx,dy,density,grpobjs,index)
 {
+
+
+  var displayFactorSpeed = 50;
+  var displayFactorAccel = 5000;
+
 
   this.grpobj = grpobjs.body;
   this.acc = grpobjs.acc;
@@ -22,6 +27,9 @@ function Body(ax,ay,dx,dy,density,grpobjs)
 
   this.w = this.grpobj.getStage().getWidth();
   this.h = this.grpobj.getStage().getHeight();
+
+
+  this.index = index;
 
   this.getMass = function()
   {
@@ -105,11 +113,11 @@ function Body(ax,ay,dx,dy,density,grpobjs)
 
   this.setVectors = function()
   {
-    var f = 10;
+
     var x = this.grpobj.x();
     var y = this.grpobj.y();
-    this.spd.points([x,y, x+this.dx*f, y+this.dy*f]);
-    this.acc.points([x,y, x+this.ax*f*10, y+this.ay*f*10]);
+    this.spd.points([x,y, x+this.dx * displayFactorSpeed, y+this.dy * displayFactorSpeed]);
+    this.acc.points([x,y, x+this.ax * displayFactorAccel, y+this.ay * displayFactorAccel]);
 
   }
 }

@@ -4,285 +4,105 @@
     <meta charset="utf-8" />
     <title>PhysLabJs</title>
     <style>
+      
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
             background-color: #F0F0F0;
         }
+
+        #toolbar {
+          position: fixed; 
+          z-index: 1;
+        }
+
+        #bodies { 
+          border: 1px solid black;
+          border-collapse: collapse;
+          margin-top: 5px;
+          margin-right: 5px;
+        	position: absolute;
+	        top: 0;
+	        right: 0;
+	        width: 400px;
+          z-index: 1;
+        }
+
+        th {
+          text-align: center;
+        }
+
+        #footer {
+          position: fixed; 
+          z-index: 1;
+          bottom: 0;
+	        right: 0;
+          width: 100%;
+          text-align: right;
+          margin-bottom: 5px;
+          margin-right: 5px;
+        }
+
+        #tooltip2 {
+          text-align: center;
+          width: 100%;
+          margin-top: 2px;
+          font-style: italic;
+        }
+
     </style>
-<script src="https://cdn.rawgit.com/konvajs/konva/2.0.3/konva.min.js"></script>
-<script src="js/body.js"></script>
+
+  <script src="https://cdn.rawgit.com/konvajs/konva/2.0.3/konva.min.js"></script>
+  <script src="js/body.js"></script>
 </head>
 <body>
 
-<div id=toolbar>
-<span><button onclick="reset()">Reset</button>
-<span><button onclick="start()">Start</button>
-<span><button  onclick="stop()">Stop</button>
-<span><button  onclick="addNew()">+</button>
-<span style="display:none" id="newbodyprops">
-<label id=lblRadius for=inRadius>Radius:</label>
-<input type="text" id=inRadius name=inRadius value="10" size="5">
-<label id=lblDensity for=inDensity>Density:</label>
-<input type="text" id=inDensity name=inDensity value="1" size="5">
-<label>Acceleration:</label>
-<input type="text" id=inAx name=inAx value="0" size="5">
-<input type="text" id=inAy name=inAy value="0" size="5">
-<label>Speed:</label>
-<input type="text" id=inDx name=inDx value="0" size="5">
-<input type="text" id=inDy name=inDy value="0" size="5">
-<label id=lblColor for="inColor">Color:</label><input type="color" id="inColor" name="inColor">
-<button onclick="confirmNew()">Confirm</button> 
-<button onclick="cancelNew()">Cancel</button></span>
-</div>
+  <div id=toolbar>
+    <div id=line1>
+      <span><button onclick="config()">Config</button>
+      <span><button onclick="reset()">Reset</button>
+      <span><button onclick="start()">Start</button>
+      <span><button  onclick="stop()">Stop</button>
+      <span><button  onclick="addNew()">Add</button>
+      <span style="visibility: hidden;" id="newbodyprops">
+        <label id=lblRadius for=inRadius>Radius:</label>
+        <input type="text" id=inRadius name=inRadius value="10" size="5">
+        <label id=lblDensity for=inDensity>Density:</label>
+        <input type="text" id=inDensity name=inDensity value="1" size="5">
+        <label onmousemove="showTooltip(true,'t01')" onmouseout="showTooltip(false)">Acceleration:</label>
+        <input type="text" id=inAx name=inAx value="0" size="5">
+        <input type="text" id=inAy name=inAy value="0" size="5">
+        <label onmousemove="showTooltip(true,'t02')" onmouseout="showTooltip(false)">Speed:</label>
+        <input type="text" id=inDx name=inDx value="0" size="5">
+        <input type="text" id=inDy name=inDy value="0" size="5">
+        <label id=lblColor for="inColor">Color:</label><input type="color" id="inColor" name="inColor">
+        <button onclick="confirmNew()">Confirm</button> 
+        <button onclick="cancelNew()">Cancel</button>
+      </span>
+      <span style="visibility: hidden;" id="configpanel">
+        <label>Wall Elastic Coeff</label>
+        <input type=text id=elastCoeff maxlength="4" style="width: 2em">
+        <button onclick="closeConfig()">Close</button>
+      </span>
+      <div id=line2 style="visibility: hidden;">
+        <div id=tooltip2>tooltip text</div>
+      </div>
+    </div>
+  </div>
+  <table id=bodies>
+    <thead><tr>
+      <td>ID</td>
+      <td><i>x</i></td>
+      <td><i><b>x'</b></i></td>
+      <td><i style="color: #EE0000;">x''</i></td>
+      <td>Action</td>
+    </tr></thead>
+    <tbody id=tbbodies>
+  </tbody>
+  </table>
   <div id="container"></div>
-<script>
-
-var ELAST_COEFF = 0.75;
-
-var animationOn = false;
-var inEdit = false;
-
-var width = window.innerWidth;
-var height = window.innerHeight-10;
-
-var stage = new Konva.Stage({
-    container: 'container',
-    width: width,
-    height: height
-});
-
-var layer = new Konva.Layer();
-stage.add(layer);
-var rectX = 20; //stage.getWidth() / 2 - 50;
-var rectY = 20; //stage.getHeight() / 2 - 25;
-
-var centerX = stage.getWidth() / 2;
-var centerY = stage.getHeight() / 2;
-
-
-/*
-var grpbody1 = new Konva.Circle({
-    x: centerX,  //rectX,
-    y: stage.getHeight() /2 - 250, //rectY,
-    radius: 10,
-    fill: '#00D2FF',
-    strokeWidth: 0,
-    draggable: true
-});
-
-var acc1 = new Konva.Line({
-    points: [0,0,0,0],
-    stroke:'#EE0000',
-    draggable: false
-});
-
-var spd1 = new Konva.Line({
-    points: [0,0,0,0],
-    stroke:'#000000',
-    draggable: false
-});
-
-var grpbody2 = new Konva.Circle({
-    x: stage.getWidth() - 40,
-    y: rectY,
-    radius: 20,
-    fill: '#D200FF',
-    strokeWidth: 0,
-    draggable: true
-});
-
-var acc2 = new Konva.Line({
-    points: [0,0,0,0],
-    stroke:'#EE0000',
-    draggable: false
-});
-
-var spd2 = new Konva.Line({
-    points: [0,0,0,0],
-    stroke:'#000000',
-    draggable: false
-});
-
-
-var grpbody3 = new Konva.Circle({
-    x: centerX,
-    y: stage.getHeight()/2,
-    radius: 30,
-    fill: '#D2FF00',
-    strokeWidth: 0,
-    draggable: true
-});
-
-var acc3 = new Konva.Line({
-    points: [0,0,0,0],
-    stroke:'#EE0000',
-    draggable: false
-});
-
-var spd3 = new Konva.Line({
-    points: [0,0,0,0],
-    stroke:'#000000',
-    draggable: false
-});
-*/
-
-
-// add cursor styling
-/*
-grpbody.on('mouseover', function() {
-    document.body.style.cursor = 'pointer';
-});
-grpbody.on('mouseout', function() {
-    document.body.style.cursor = 'default';
-});
-*/
-
-
-
-  function start()
-  {
-    if(!animationOn)
-    {
-      animationOn = true;
-      anim.start();
-    }
-  }
-
-  function stop()
-  {
-    animationOn=false;
-    anim.stop();
-  }
-
-  function reset()
-  {
-    for(var i=0;i<bodies.length;i++)
-      bodies[i].reset();
-
-    stage.draw();
-  }
-  
-  function cancelNew()
-  {
-    inEdit = false;
-    document.getElementById("newbodyprops").style="display:none";
-    document.getElementById("inRadius").value="10";
-    document.getElementById("inAx").value="0";
-    document.getElementById("inAy").value="0";
-    document.getElementById("inDx").value="0";
-    document.getElementById("inDy").value="0";
-    document.getElementById("inDensity").value="1";
-    
-  }
-
-  function confirmNew()
-  {
-
-    var radius = Number(document.getElementById("inRadius").value);
-    var ax = Number(document.getElementById("inAx").value);
-    var ay = Number(document.getElementById("inAy").value);
-    var dx = Number(document.getElementById("inDx").value);
-    var dy = Number(document.getElementById("inDy").value);
-    var density = Number(document.getElementById("inDensity").value);
-
-    var color = document.getElementById("inColor").value;
-
-
-    var grpbody1 = new Konva.Circle({
-    x: centerX, 
-    y: centerY,
-    radius: radius,
-    fill: color,// '#00D2FF',
-    strokeWidth: 0,
-    draggable: true
-    });
-
-    
-
-    var acc1 = new Konva.Line({
-        points: [0,0,0,0],
-        stroke:'#EE0000',
-        draggable: false
-    });
-
-    var spd1 = new Konva.Line({
-        points: [0,0,0,0],
-        stroke:'#000000',
-        draggable: false
-    });
-
-    layer.add(grpbody1);
-    layer.add(acc1);
-    layer.add(spd1);
-    var body1 = new Body(ax,ay,dx,dy,density,{body:grpbody1,acc:acc1,spd:spd1});
-
-    bodies.push(body1);
-
-    grpbody1.on("dragend", function()
-    {
-      body1.resetInitPos();
-    }); 
-
-    cancelNew();
-    stage.draw();
-  }
-
-  function addNew()
-  {
-    document.getElementById("newbodyprops").style="display:inline";
-    inEdit = true;
-  }
-
-    //var grpbodies = [];
-    var bodies = [];
-    
-
-    /*
-    grpbodies.push(grpbody1);
-    //grpbodies.push(grpbody2);
-    grpbodies.push(acc1);
-    grpbodies.push(spd1);
-    grpbodies.push(grpbody3);
-    grpbodies.push(acc3);
-    grpbodies.push(spd3);
-
-
-    for(var b=0;b<grpbodies.length;b++)
-          layer.add(grpbodies[b]);
-    */
-
-/*
-    var body1 = new Body(0,0,5,0,1,{body:grpbody1,acc:acc1,spd:spd1});
-    var body2 = new Body(0,0,0,0,grpbody2);
-    var body3 = new Body(0,0,0,0,10,{body:grpbody3,acc:acc3,spd:spd3});
-
-
-    bodies.push(body1);
-    //bodies.push(body2);
-    bodies.push(body3);
-*/
-
-    var anim = new Konva.Animation(function(frame) {
-      collisionManagement(bodies, stop);
-      if(animationOn)
-      {
-
-        for(var i=0;i<bodies.length;i++)
-          bodies[i].prepareForInteract();
-
-       interaction(bodies);
-
-        for(var b=0;b<bodies.length;b++)
-        {
-          bodies[b].move();
-        }
-      }
-    }, layer);
-
-    //anim.start();
-</script>
-
+  <script src="js/main.js"></script>
+  <div id=footer>Version 0.0.1</div>  
 </body>
 </html>
