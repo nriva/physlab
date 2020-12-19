@@ -2,10 +2,6 @@ function Body(ax,ay,dx,dy,density,grpobjs,index)
 {
 
 
-  var displayFactorSpeed = 50;
-  var displayFactorAccel = 5000;
-
-
   this.grpobj = grpobjs.body;
   this.acc = grpobjs.acc;
   this.spd = grpobjs.spd;
@@ -76,7 +72,7 @@ function Body(ax,ay,dx,dy,density,grpobjs,index)
     this.ay=0;
     this.dx=this._dx;
     this.dy=this._dy;
-	this.spd.points([0,0,0,0]);
+	  this.spd.points([0,0,0,0]);
     this.acc.points([0,0,0,0]);
   }
 
@@ -113,11 +109,11 @@ function Body(ax,ay,dx,dy,density,grpobjs,index)
 
   this.setVectors = function()
   {
-
+    debugger;
     var x = this.grpobj.x();
     var y = this.grpobj.y();
-    this.spd.points([x,y, x+this.dx * displayFactorSpeed, y+this.dy * displayFactorSpeed]);
-    this.acc.points([x,y, x+this.ax * displayFactorAccel, y+this.ay * displayFactorAccel]);
+    this.spd.points([x,y, x+this.dx * config.displayFactorSpeed, y+this.dy * config.displayFactorSpeed]);
+    this.acc.points([x,y, x+this.ax * config.displayFactorAccel, y+this.ay * config.displayFactorAccel]);
 
   }
 }
@@ -171,7 +167,7 @@ function interact(o1,o2)
     // Angolo del vettore f
     var alpha = Math.atan(Math.abs(y/x));
 
-    var f = 0.01 / Math.sqrt(x*x + y*y);
+    var f = config.G / Math.sqrt(x*x + y*y);
 
     // componenti di f lungo gli assi
     var fx1 = f * Math.cos(alpha) * o2.getMass();

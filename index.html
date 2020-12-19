@@ -3,13 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <title>PhysLabJs</title>
+    <!-- Add icon library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> 
     <style>
-      
+
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #F0F0F0;
+            background-color: darkslategrey;
+            color: whitesmoke;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            font-size: small;
         }
 
         #toolbar {
@@ -18,7 +23,7 @@
         }
 
         #bodies { 
-          border: 1px solid black;
+          border: 1px solid white;
           border-collapse: collapse;
           margin-top: 5px;
           margin-right: 5px;
@@ -29,11 +34,25 @@
           z-index: 1;
         }
 
-        th {
+        thead {
+          border: 1px solid white;
+          border-collapse: collapse;
+        }
+
+        th, #tbbodies td {
           text-align: center;
         }
 
-        #footer {
+        button {
+          background-color: white;
+          padding: 4px 8px;
+          text-align: center;
+          text-decoration: none;
+          display: inline-block;
+          font-size: small;
+        }        
+
+        #footerVersion {
           position: fixed; 
           z-index: 1;
           bottom: 0;
@@ -60,31 +79,34 @@
 
   <div id=toolbar>
     <div id=line1>
-      <span><button onclick="config()">Config</button>
+      <span><button onclick="showConfig()"><i class="fa fa-cog" aria-hidden="true"></i></button>
       <span><button onclick="reset()">Reset</button>
       <span><button onclick="start()">Start</button>
       <span><button  onclick="stop()">Stop</button>
       <span><button  onclick="addNew()">Add</button>
-      <span style="visibility: hidden;" id="newbodyprops">
-        <label id=lblRadius for=inRadius>Radius:</label>
-        <input type="text" id=inRadius name=inRadius value="10" size="5">
-        <label id=lblDensity for=inDensity>Density:</label>
-        <input type="text" id=inDensity name=inDensity value="1" size="5">
-        <label onmousemove="showTooltip(true,'t01')" onmouseout="showTooltip(false)">Acceleration:</label>
-        <input type="text" id=inAx name=inAx value="0" size="5">
-        <input type="text" id=inAy name=inAy value="0" size="5">
-        <label onmousemove="showTooltip(true,'t02')" onmouseout="showTooltip(false)">Speed:</label>
-        <input type="text" id=inDx name=inDx value="0" size="5">
-        <input type="text" id=inDy name=inDy value="0" size="5">
-        <label id=lblColor for="inColor">Color:</label><input type="color" id="inColor" name="inColor">
-        <button onclick="confirmNew()">Confirm</button> 
-        <button onclick="cancelNew()">Cancel</button>
-      </span>
+
       <span style="visibility: hidden;" id="configpanel">
-        <label>Wall Elastic Coeff</label>
-        <input type=text id=elastCoeff maxlength="4" style="width: 2em">
-        <button onclick="closeConfig()">Close</button>
+        <label>Wall Elastic Coeff:</label><input type=text id=elastCoeff maxlength="4" style="width: 2em">&nbsp;
+        <label>G:</label><input type=text id=constG maxlength="4" style="width: 2em">
+        <button onclick="closeConfig()"><i class="fa fa-check" aria-hidden="true"></i></button>
+        <button onclick="resetConfig()">Reset</button>
       </span>
+    </div>
+      <div style="visibility: hidden;" id="newbodyprops">
+          <label id=lblRadius for=inRadius>Radius:</label>
+          <input type="text" id=inRadius name=inRadius value="10" size="5">
+          <label id=lblDensity for=inDensity>Density:</label>
+          <input type="text" id=inDensity name=inDensity value="1" size="5">
+          <label onmousemove="showTooltip(true,'t01')" onmouseout="showTooltip(false)">Acceleration:</label>
+          <input type="text" id=inAx name=inAx value="0" size="5">
+          <input type="text" id=inAy name=inAy value="0" size="5">
+          <label onmousemove="showTooltip(true,'t02')" onmouseout="showTooltip(false)">Speed:</label>
+          <input type="text" id=inDx name=inDx value="0" size="5">
+          <input type="text" id=inDy name=inDy value="0" size="5">
+          <label id=lblColor for="inColor">Color:</label><input type="color" id="inColor" name="inColor" value="#FFFFFF">
+          <button onclick="confirmNew()">Confirm</button> 
+          <button onclick="cancelNew()">Cancel</button>
+      </div>
       <div id=line2 style="visibility: hidden;">
         <div id=tooltip2>tooltip text</div>
       </div>
@@ -92,17 +114,18 @@
   </div>
   <table id=bodies>
     <thead><tr>
-      <td>ID</td>
-      <td><i>x</i></td>
-      <td><i><b>x'</b></i></td>
-      <td><i style="color: #EE0000;">x''</i></td>
-      <td>Action</td>
+      <th>ID</th>
+      <th><i>x</i></th>
+      <th><i style="color: black">x'</i></th>
+      <th><i style="color: #EE0000;">x''</i></th>
+      <th>Action</th>
     </tr></thead>
     <tbody id=tbbodies>
   </tbody>
   </table>
   <div id="container"></div>
+  <div id=footerVersion>Version</div> 
   <script src="js/main.js"></script>
-  <div id=footer>Version 0.0.1</div>  
+   
 </body>
 </html>

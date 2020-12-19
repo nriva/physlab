@@ -1,10 +1,23 @@
-var ELAST_COEFF = 0.75;
+var version = "0.0.1";
+var defaultConfig = { elastCoeff : 0.75, G: 0.01,
+  displayFactorSpeed : 50,
+  displayFactorAccel : 5000,
+  spdColor: "#000000", accColor: "#EE0000" };
 
+var config = defaultConfig;
+
+var newConf = localStorage.getItem("config");
+if(newConf) config = JSON.parse(newConf);
+
+// Ugly status vars
 var animationOn = false;
 var inEdit = false;
+var inConfig = false;
 
 var width = window.innerWidth;
 var height = window.innerHeight-10;
+
+var bodies = [];
 
 var stage = new Konva.Stage({
     container: 'container',
@@ -14,28 +27,62 @@ var stage = new Konva.Stage({
 
 var layer = new Konva.Layer();
 stage.add(layer);
-var rectX = 20; //stage.getWidth() / 2 - 50;
-var rectY = 20; //stage.getHeight() / 2 - 25;
 
 var centerX = stage.getWidth() / 2;
 var centerY = stage.getHeight() / 2;
 
 
-function config()
+function showConfig()
 {
   if(inEdit)
     return;
 
-    document.getElementById('elastCoeff').value = ELAST_COEFF;
-    document.getElementById("configpanel").style="visibility:visible";
+  if(inConfig) {
+    hideConfig();
+    return;
+  }
+    
+
+  refreshConfig();
+  document.getElementById("configpanel").style="visibility:visible";
+  inConfig = true;
+}
+
+function refreshConfig()
+{
+  document.getElementById('elastCoeff').value = config.elastCoeff;
+  document.getElementById('constG').value = config.G;
 }
 
 function closeConfig()
 {
     var n = Number(document.getElementById('elastCoeff').value);
-    if(!isNaN(n))
-      ELAST_COEFF = n;
-    document.getElementById("configpanel").style="visibility:hidden";
+    if(!isNaN(n)) {
+      config.elastCoeff = n;
+      localStorage.setItem("config", JSON.stringify(config));
+    }
+
+    var n = Number(document.getElementById('constG').value);
+    if(!isNaN(n)) {
+      config.G = n;
+      localStorage.setItem("config", JSON.stringify(config));
+    }
+
+
+    hideConfig();
+}
+
+function resetConfig() {
+  localStorage.removeItem("config");
+  config = defaultConfig;
+  refreshConfig();
+  closeConfig();
+}
+
+function hideConfig()
+{
+  document.getElementById("configpanel").style="visibility:hidden";
+  inConfig = false;
 }
 
 function start() {
@@ -54,8 +101,11 @@ function start() {
 
   function reset()
   {
-    for(var i=0;i<bodies.length;i++)
+    for(var i=0;i<bodies.length;i++) {
       bodies[i].reset();
+      refreshBodyData(bodies[i]);
+    }
+
 
     stage.draw();
   }
@@ -99,18 +149,18 @@ function start() {
 
     var acc1 = new Konva.Line({
         points: [0,0,0,0],
-        stroke:'#EE0000',
+        stroke: config.accColor,
         draggable: false
     });
 
     var spd1 = new Konva.Line({
         points: [0,0,0,0],
-        stroke:'#000000',
+        stroke: config.spdColor,
         draggable: false
     });
 
 
-    layer.remove
+    //layer.remove
 
     layer.add(grpbody1);
     layer.add(acc1);
@@ -144,20 +194,37 @@ function start() {
     row.id = 'row' + postion;
 
     // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
-    var cell1 = row.insertCell(0);
-    var cell2 = row.insertCell(1);
-    var cell3 = row.insertCell(2);
-    var cell4 = row.insertCell(3);
-    var cell5 = row.insertCell(4);
+    var cell1 = row.insertCell(0); cell1.style = "width: 10%";
+    var cell2 = row.insertCell(1); cell2.style = "width: 25%";
+    var cell3 = row.insertCell(2); cell3.style = "width: 25%";
+    var cell4 = row.insertCell(3); cell4.style = "width: 25%";
+    var cell5 = row.insertCell(4); //cell5.style = "width: 10%";
 
     // Add some text to the new cells:
     cell1.innerHTML = '<span style="color: ' + color +';">' + postion  + '</span>';
     cell2.innerHTML = `(<span id="x${postion}">${body.inix}</span>,<span id="y${postion}">${body.iniy}</span>)`;
-    cell3.innerHTML = `(<span id="sx${postion}"></span>,<span id="sy${postion}"></span>)`;
-    cell4.innerHTML = `(<span id="ax${postion}"></span>,<span id="ay${postion}"></span>)`;
-    cell5.innerHTML = '<button onclick="remove(' + postion +')">Remove</button>';
-
+    cell3.innerHTML = `(<span id="sx${postion}">${body._dx}</span>,<span id="sy${postion}">${body._dy}</span>)`;
+    cell4.innerHTML = `(<span id="ax${postion}">${body._ax}</span>,<span id="ay${postion}">${body._ay}</span>)`;
+    cell5.innerHTML = '<button onclick="remove(' + postion +')"><i class="fa fa-trash"></button>';
   }
+
+  function refreshBodyData(body)
+  {
+    var x = document.getElementById("x" + body.index);
+    var y = document.getElementById("y" + body.index);
+    var sx = document.getElementById("sx" + body.index);
+    var sy = document.getElementById("sy" + body.index);
+    var ax = document.getElementById("ax" + body.index);
+    var ay = document.getElementById("ay" + body.index);
+
+    x.innerText = body.inix;
+    y.innerText=body.iniy;
+    sx.innerText=body._dx;
+    sy.innerText=body._dy;
+    ax.innerText=body._ax;
+    ay.innerText=body._ay;
+  }
+
 
   function remove(id)
   {
@@ -192,7 +259,20 @@ function start() {
     inEdit = true;
   }
 
-  var bodies = [];
+
+
+  function refresh(body)
+  {
+    document.getElementById("x" + body.index).innerText = Math.floor(body.x());
+    document.getElementById("y" + body.index).innerText = Math.floor(body.y());
+
+
+    document.getElementById("sx" + body.index).innerText = Number(body.dx).toFixed(3);
+    document.getElementById("sy" + body.index).innerText = Number(body.dy).toFixed(3);
+
+    document.getElementById("ax" + body.index).innerText = Number(body.ax).toFixed(3);
+    document.getElementById("ay" + body.index).innerText = Number(body.ay).toFixed(3);    
+  }
     
 
   var anim = new Konva.Animation(function(frame) {
@@ -208,20 +288,15 @@ function start() {
         for(var b=0;b<bodies.length;b++)
         {
           bodies[b].move();
-          document.getElementById("x" + bodies[b].index).innerText = Math.floor(bodies[b].x());
-          document.getElementById("y" + bodies[b].index).innerText = Math.floor(bodies[b].y());
+          refresh(bodies[b]);
 
-
-          document.getElementById("sx" + bodies[b].index).innerText = Number(bodies[b].dx).toFixed(3);
-          document.getElementById("sy" + bodies[b].index).innerText = Number(bodies[b].dy).toFixed(3);
-
-          document.getElementById("ax" + bodies[b].index).innerText = Number(bodies[b].ax).toFixed(3);
-          document.getElementById("ay" + bodies[b].index).innerText = Number(bodies[b].ay).toFixed(3);
 
         }
       }
   }, layer);
 
+
+  // Tooltips
 
   var toolTipShown = false;
 
@@ -241,6 +316,12 @@ function start() {
     document.getElementById("line2").style.visibility = bShow? "visible" : "hidden";
     toolTipShown = bShow;
   }
+
+  function init() {
+    document.getElementById("footerVersion").innerText = "Version " + version;
+  }
+
+  init();
 
 
   //anim.start();
