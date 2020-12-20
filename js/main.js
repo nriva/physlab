@@ -1,4 +1,4 @@
-var version = "0.0.1";
+var version = "0.1.0-alpha";
 var defaultConfig = { elastCoeff : 0.75, G: 0.01,
   displayFactorSpeed : 50,
   displayFactorAccel : 5000,
@@ -18,6 +18,7 @@ var width = window.innerWidth;
 var height = window.innerHeight-10;
 
 var bodies = [];
+var grpbodies = [];
 
 var stage = new Konva.Stage({
     container: 'container',
@@ -103,6 +104,8 @@ function start() {
   {
     for(var i=0;i<bodies.length;i++) {
       bodies[i].reset();
+      grpbodies[i].spd.points([0,0,0,0]);
+      grpbodies[i].acc.points([0,0,0,0]);
       refreshBodyData(bodies[i]);
     }
 
@@ -165,16 +168,35 @@ function start() {
     layer.add(grpbody1);
     layer.add(acc1);
     layer.add(spd1);
-    var body1 = new Body(ax,ay,dx,dy,density,{body:grpbody1,acc:acc1,spd:spd1},bodies.length);
 
+    var conf = {index:bodies.length
+      ,x: grpbody1.x() ,y: grpbody1.y()
+      ,dx: dx ,dy: dy
+      ,ax: ax,ay: ay
+      ,density:density
+      ,radius:radius,
+      world:{width:stage.getWidth(),height:stage.getHeight()}};
+
+    //var body1 = new Body(ax,ay,dx,dy,density,{body:grpbody1,acc:acc1,spd:spd1},bodies.length);
+    var body1 = new Body(conf);
+    //body1.setGraphObjs({body:grpbody1,acc:acc1,spd:spd1});
     bodies.push(body1);
+    grpbodies.push({body:grpbody1,acc:acc1,spd:spd1});
     addToList(body1,bodies.length-1,color);
 
     grpbody1.on("dragend", function()
     {
-      body1.resetInitPos();
-      document.getElementById("x" + body1.index).innerText = Math.floor(body1.x());
-      document.getElementById("y" + body1.index).innerText = Math.floor(body1.y());
+      debugger;
+      var grp = arguments[0].target;
+      var x = grp.x();
+      var y = grp.y();
+      
+
+      var index = grpbodies.findIndex( (elem) => elem.body == grp );
+      bodies[index].resetInitPos(x,y);
+
+      document.getElementById("x" + body1.index).innerText = Math.floor(x);
+      document.getElementById("y" + body1.index).innerText = Math.floor(y);
 
     }); 
 
@@ -202,7 +224,7 @@ function start() {
 
     // Add some text to the new cells:
     cell1.innerHTML = '<span style="color: ' + color +';">' + postion  + '</span>';
-    cell2.innerHTML = `(<span id="x${postion}">${body.inix}</span>,<span id="y${postion}">${body.iniy}</span>)`;
+    cell2.innerHTML = `(<span id="x${postion}">${body._x}</span>,<span id="y${postion}">${body._y}</span>)`;
     cell3.innerHTML = `(<span id="sx${postion}">${body._dx}</span>,<span id="sy${postion}">${body._dy}</span>)`;
     cell4.innerHTML = `(<span id="ax${postion}">${body._ax}</span>,<span id="ay${postion}">${body._ay}</span>)`;
     cell5.innerHTML = '<button onclick="remove(' + postion +')"><i class="fa fa-trash"></button>';
@@ -239,15 +261,19 @@ function start() {
     }
 
     var body = bodies[0];
-    if(bodies.length>1)
+    var grpbody = grpbodies[0];
+    if(bodies.length>1) {
       body = bodies.splice(id,1)[0];
+      grpbody = grpbodies.splice(id,1)[0];
+    }
     if(body) {
+      
       //body.grpobj.visible(false); 
-      body.grpobj.destroy();
+      grpbody.body.destroy();
       //body.acc.visible(false); 
-      body.acc.destroy();
+      grpbody.acc.destroy();
       //body.spd.visible(false); 
-      body.spd.destroy();
+      grpbody.spd.destroy();
 
       layer.draw();
     }
@@ -261,17 +287,27 @@ function start() {
 
 
 
-  function refresh(body)
-  {
-    document.getElementById("x" + body.index).innerText = Math.floor(body.x());
-    document.getElementById("y" + body.index).innerText = Math.floor(body.y());
+  function refresh(grpbody,body) {
+    document.getElementById("x" + body.index).innerText = Math.floor(body.x);
+    document.getElementById("y" + body.index).innerText = Math.floor(body.y);
 
 
     document.getElementById("sx" + body.index).innerText = Number(body.dx).toFixed(3);
     document.getElementById("sy" + body.index).innerText = Number(body.dy).toFixed(3);
 
     document.getElementById("ax" + body.index).innerText = Number(body.ax).toFixed(3);
-    document.getElementById("ay" + body.index).innerText = Number(body.ay).toFixed(3);    
+    document.getElementById("ay" + body.index).innerText = Number(body.ay).toFixed(3);   
+
+    debugger;
+    var x = body.x;
+    var y = body.y;
+
+    grpbody.body.x(x);
+    grpbody.body.y(y);
+
+
+    grpbody.spd.points([x,y, x+body.dx * config.displayFactorSpeed, y+body.dy * config.displayFactorSpeed]);
+    grpbody.acc.points([x,y, x+body.ax * config.displayFactorAccel, y+body.ay * config.displayFactorAccel]);
   }
     
 
@@ -288,9 +324,7 @@ function start() {
         for(var b=0;b<bodies.length;b++)
         {
           bodies[b].move();
-          refresh(bodies[b]);
-
-
+          refresh(grpbodies[b],bodies[b]);
         }
       }
   }, layer);

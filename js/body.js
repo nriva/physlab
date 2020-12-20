@@ -1,37 +1,31 @@
-function Body(ax,ay,dx,dy,density,grpobjs,index)
-{
+function Body(conf) {
 
-
-  this.grpobj = grpobjs.body;
-  this.acc = grpobjs.acc;
-  this.spd = grpobjs.spd;
-
-  this.inix = this.grpobj.x();
-  this.iniy = this.grpobj.y();
-  this._ax=ax;
-  this._ay=ay;
+  this._x = conf.x;
+  this._y = conf.y;
+  this.x = conf.x;
+  this.y = conf.y;
+  this._ax=conf.ax;
+  this._ay= conf.ay;
   this.ax=0;
   this.ay=0;
-  this.dx=dx;
-  this.dy=dy;
-  this._dx=dx;
-  this._dy=dy;
+  this._dx=conf.dx;
+  this._dy=conf.dy;
+  this.dx=this._dx;
+  this.dy=this._dy;
 
-  this.density = density;
+  this.density = conf.density;
+  this.index = conf.index;
 
-  this.radius = this.grpobj.radius();
+  this.radius = conf.radius;
 
-  this.w = this.grpobj.getStage().getWidth();
-  this.h = this.grpobj.getStage().getHeight();
-
-
-  this.index = index;
+  this.w = conf.world.width;
+  this.h = conf.world.height;  
 
   this.getMass = function()
   {
-    var m= this.grpobj.radius() *this.grpobj.radius();
-    if(density)
-      m *= density;
+    var m= this.radius * this.radius;
+    if(this.density)
+      m *= this.density;
     return m;
   }
 
@@ -41,64 +35,54 @@ function Body(ax,ay,dx,dy,density,grpobjs,index)
     return this.getMass() * Math.sqrt(this.dx*this.dx + this.dy*this.dy);
   }
 
-  this.x=function()
-  {
-    return this.grpobj.x();
-
-  }
-
-  this.y=function()
-  {
-    return this.grpobj.y();
-  }
-
   this.getRadius = function ()
   {
     return this.radius;
   }
 
-  this.resetInitPos = function()
+  this.resetInitPos = function(x,y)
   {
-    this.inix = this.grpobj.x();
-    this.iniy = this.grpobj.y();
+    this._x = x;
+    this._y = y;
+
+    this.x = x;
+    this.y = y;
   }
 
 
   this.reset = function()
   {
-    this.grpobj.x(this.inix);
-    this.grpobj.y(this.iniy);
+    this.x=this._x;
+    this.y=this._y;
     this.ax=0;
     this.ay=0;
     this.dx=this._dx;
     this.dy=this._dy;
-	  this.spd.points([0,0,0,0]);
-    this.acc.points([0,0,0,0]);
   }
 
   this.move = function()
   {
     // Accelerazione
-    this.dx += this.ax + this._ax;
-    this.dy += this.ay + this._ay;
+    this.dx += this._ax + this.ax;
+    this.dy += this._ay + this.ay;
 
     // Rimbalzo
-    if(this.x() + this.dx > this.w - this.radius || this.x() + this.dx < this.radius) {
-        this.dx = - ELAST_COEFF * this.dx;
+    if(this.x + this.dx > this.w - this.radius || this.x + this.dx < this.radius) {
+        this.dx = - config.elastCoeff * this.dx;
     }
 
-    if(this.y() + this.dy > this.h - this.radius || this.y() + this.dy < this.radius) {
-        this.dy = - ELAST_COEFF * this.dy;
+    if(this.y + this.dy > this.h - this.radius || this.y + this.dy < this.radius) {
+        this.dy = - config.elastCoeff * this.dy;
     }
 
     // Spostamento
-    var _x = this.x() + this.dx;
-    var _y = this.y() + this.dy;
+    this.x = this.x + this.dx;
+    this.y = this.y + this.dy;
 
-    this.grpobj.x(_x);
-    this.grpobj.y(_y);
+    //this.grpobj.x(_x);
+    //this.grpobj.y(_y);
 
-    this.setVectors();
+    //this.setVectors();
   }
 
   this.prepareForInteract = function()
@@ -107,7 +91,7 @@ function Body(ax,ay,dx,dy,density,grpobjs,index)
     this.ay=0;
   }
 
-  this.setVectors = function()
+  /*this.setVectors = function()
   {
     debugger;
     var x = this.grpobj.x();
@@ -115,70 +99,8 @@ function Body(ax,ay,dx,dy,density,grpobjs,index)
     this.spd.points([x,y, x+this.dx * config.displayFactorSpeed, y+this.dy * config.displayFactorSpeed]);
     this.acc.points([x,y, x+this.ax * config.displayFactorAccel, y+this.ay * config.displayFactorAccel]);
 
-  }
+  }*/
 }
 
 
 
-function collisionManagement(objects,onCollision)
-{
-    for(var i=0;i<objects.length;i++)
-        for(var j=0;j<objects.length;j++)
-        if(i!=j && i>=j)
-        {
-            var o1 = objects[i];
-            var o2 = objects[j];
-
-            var x = o1.x()-o2.x();
-            var y = o1.y()-o2.y();
-
-            if(x*x+y*y< (o1.getRadius()+o2.getRadius())*(o1.getRadius()+o2.getRadius()) )
-            {
-            // Collisione
-            //animationOn = false;
-
-            if(typeof onCollision === "function")
-                onCollision();
-
-            //var p1 = o1.getMomentum();
-            //var p2 = o2.getMomentum();
-
-            }
-        }
-}
-
-function interaction(bodies)
-{
-    for(var i1=0;i1<bodies.length;i1++)
-        for(var i2=0;i2<bodies.length;i2++)
-        if(i1>i2)
-        {
-            interact(bodies[i1], bodies[i2]);
-        }
-
-}
-
-function interact(o1,o2)
-{
-
-    var x = o1.x()-o2.x();
-    var y = o1.y()-o2.y();
-
-    // Angolo del vettore f
-    var alpha = Math.atan(Math.abs(y/x));
-
-    var f = config.G / Math.sqrt(x*x + y*y);
-
-    // componenti di f lungo gli assi
-    var fx1 = f * Math.cos(alpha) * o2.getMass();
-    var fy1 = f * Math.sin(alpha) * o2.getMass();
-
-    var fx2 = f * Math.cos(alpha) * o1.getMass();
-    var fy2 = f * Math.sin(alpha) * o1.getMass();
-
-    if(x>0) fx1 = - fx1; o1.ax += fx1;
-    if(y>0) fy1 = - fy1; o1.ay += fy1;
-
-    if(x<0) fx2= - fx2; o2.ax += fx2;
-    if(y<0) fy2= - fy2; o2.ay += fy2;
-}
