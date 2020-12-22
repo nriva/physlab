@@ -1,6 +1,17 @@
-function Body(conf) {
+/**
+ * 
+ * @param {*} conf Configuration for the new Body 
+ * @param {*} world Configuration of the world
+ */
+function Body(conf, world) {
 
+  /**
+   * Inital value for x.
+   */
   this._x = conf.x;
+  /**
+   * Inital value for y.
+   */
   this._y = conf.y;
   this.x = conf.x;
   this.y = conf.y;
@@ -18,8 +29,7 @@ function Body(conf) {
 
   this.radius = conf.radius;
 
-  this.w = conf.world.width;
-  this.h = conf.world.height;  
+  this.world = world;  
 
   this.getMass = function()
   {
@@ -29,7 +39,9 @@ function Body(conf) {
     return m;
   }
 
-
+  /**
+   * @todo unused
+   */
   this.getMomentum = function()
   {
     return this.getMass() * Math.sqrt(this.dx*this.dx + this.dy*this.dy);
@@ -40,10 +52,12 @@ function Body(conf) {
     return this.radius;
   }
 
-  this.resetInitPos = function(x,y)
+  this.setNewPos = function(x,y,initial)
   {
-    this._x = x;
-    this._y = y;
+    if(initial) {
+      this._x = x;
+      this._y = y;
+    }
 
     this.x = x;
     this.y = y;
@@ -62,27 +76,22 @@ function Body(conf) {
 
   this.move = function()
   {
-    // Accelerazione
+    // Acceleration
     this.dx += this._ax + this.ax;
     this.dy += this._ay + this.ay;
 
-    // Rimbalzo
-    if(this.x + this.dx > this.w - this.radius || this.x + this.dx < this.radius) {
+    // Bounce
+    if(this.x + this.dx > this.world.width - this.radius || this.x + this.dx < this.radius) {
         this.dx = - config.elastCoeff * this.dx;
     }
 
-    if(this.y + this.dy > this.h - this.radius || this.y + this.dy < this.radius) {
+    if(this.y + this.dy > this.world.height - this.radius || this.y + this.dy < this.radius) {
         this.dy = - config.elastCoeff * this.dy;
     }
 
-    // Spostamento
+    // Movement
     this.x = this.x + this.dx;
     this.y = this.y + this.dy;
-
-    //this.grpobj.x(_x);
-    //this.grpobj.y(_y);
-
-    //this.setVectors();
   }
 
   this.prepareForInteract = function()
@@ -91,15 +100,26 @@ function Body(conf) {
     this.ay=0;
   }
 
-  /*this.setVectors = function()
-  {
-    debugger;
-    var x = this.grpobj.x();
-    var y = this.grpobj.y();
-    this.spd.points([x,y, x+this.dx * config.displayFactorSpeed, y+this.dy * config.displayFactorSpeed]);
-    this.acc.points([x,y, x+this.ax * config.displayFactorAccel, y+this.ay * config.displayFactorAccel]);
+  /**
+   * @returns the configuration of the initial state of the Body.
+   */
+  this.getConfiguration = function() {
 
-  }*/
+    var conf = {};
+    conf.x = this._x;
+    conf.y = this._y;
+    conf.ax = this._ax;
+    conf.ay = this._ay;
+    conf.dx = this._dx;
+    conf.dy = this._dy;
+  
+    conf.density = this.density;
+    conf.index = this.index;
+  
+    conf.radius = this.radius;
+
+    return conf;
+  }
 }
 
 

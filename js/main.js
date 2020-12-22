@@ -1,7 +1,7 @@
 var version = "0.1.0-alpha";
 var defaultConfig = { elastCoeff : 0.75, G: 0.01,
   displayFactorSpeed : 50,
-  displayFactorAccel : 5000,
+  displayFactorAccel : 1000,
   spdColor: "#000000", accColor: "#EE0000" };
 
 var config = defaultConfig;
@@ -19,6 +19,8 @@ var height = window.innerHeight-10;
 
 var bodies = [];
 var grpbodies = [];
+
+var world = null;
 
 var stage = new Konva.Stage({
     container: 'container',
@@ -104,6 +106,8 @@ function start() {
   {
     for(var i=0;i<bodies.length;i++) {
       bodies[i].reset();
+      grpbodies[i].body.x(bodies[i].x);
+      grpbodies[i].body.y(bodies[i].y);
       grpbodies[i].spd.points([0,0,0,0]);
       grpbodies[i].acc.points([0,0,0,0]);
       refreshBodyData(bodies[i]);
@@ -174,11 +178,12 @@ function start() {
       ,dx: dx ,dy: dy
       ,ax: ax,ay: ay
       ,density:density
-      ,radius:radius,
-      world:{width:stage.getWidth(),height:stage.getHeight()}};
+      ,radius:radius};
 
+    if(world==null)
+      world={width:stage.getWidth(),height:stage.getHeight()};
     //var body1 = new Body(ax,ay,dx,dy,density,{body:grpbody1,acc:acc1,spd:spd1},bodies.length);
-    var body1 = new Body(conf);
+    var body1 = new Body(conf, world);
     //body1.setGraphObjs({body:grpbody1,acc:acc1,spd:spd1});
     bodies.push(body1);
     grpbodies.push({body:grpbody1,acc:acc1,spd:spd1});
@@ -193,7 +198,7 @@ function start() {
       
 
       var index = grpbodies.findIndex( (elem) => elem.body == grp );
-      bodies[index].resetInitPos(x,y);
+      bodies[index].setNewPos(x,y,!animationOn);
 
       document.getElementById("x" + body1.index).innerText = Math.floor(x);
       document.getElementById("y" + body1.index).innerText = Math.floor(y);
@@ -239,12 +244,12 @@ function start() {
     var ax = document.getElementById("ax" + body.index);
     var ay = document.getElementById("ay" + body.index);
 
-    x.innerText = body.inix;
-    y.innerText=body.iniy;
-    sx.innerText=body._dx;
-    sy.innerText=body._dy;
-    ax.innerText=body._ax;
-    ay.innerText=body._ay;
+    x.innerText = body.x;
+    y.innerText=body.y;
+    sx.innerText=body.dx;
+    sy.innerText=body.dy;
+    ax.innerText=body.ax;
+    ay.innerText=body.ay;
   }
 
 
