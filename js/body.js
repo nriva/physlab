@@ -5,6 +5,8 @@
  */
 function Body(conf, world) {
 
+
+
   /**
    * Inital value for x.
    */
@@ -30,6 +32,8 @@ function Body(conf, world) {
   this.radius = conf.radius;
 
   this.world = world;  
+
+  this.id = "B" + String(conf.index).padStart(4, '0');
 
   this.getMass = function()
   {
@@ -106,6 +110,7 @@ function Body(conf, world) {
   this.getConfiguration = function() {
 
     var conf = {};
+    conf.id = this.id;
     conf.x = this._x;
     conf.y = this._y;
     conf.ax = this._ax;

@@ -9,4 +9,4 @@ Made to paly with:
 * Vanilla JavaScript
 * Konva.js
 
-And to avoid database!
+And to avoid using database!

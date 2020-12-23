@@ -50,6 +50,7 @@
           text-decoration: none;
           display: inline-block;
           font-size: small;
+          border-radius: 4px;
         }        
 
         #footerVersion {
@@ -70,6 +71,78 @@
           font-style: italic;
         }
 
+
+        /* The Modal (background) */
+        .modal {
+          display: none; /* Hidden by default */
+          position: fixed; /* Stay in place */
+          z-index: 2; /* Sit on top */
+          padding-top: 100px; /* Location of the box */
+          left: 0;
+          top: 0;
+          width: 100%; /* Full width */
+          height: 100%; /* Full height */
+          overflow: auto; /* Enable scroll if needed */
+          background-color: rgb(0,0,0); /* Fallback color */
+          background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+
+        /* Modal Content */
+        .modal-content {
+          position: relative;
+          background-color: darkslategrey;
+          margin: auto;
+          padding: 0;
+          border: 1px solid #888;
+          width: 80%;
+          box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+          -webkit-animation-name: animatetop;
+          -webkit-animation-duration: 0.4s;
+          animation-name: animatetop;
+          animation-duration: 0.4s
+        }
+
+        /* Add Animation */
+        @-webkit-keyframes animatetop {
+          from {top:-300px; opacity:0} 
+          to {top:0; opacity:1}
+        }
+
+        @keyframes animatetop {
+          from {top:-300px; opacity:0}
+          to {top:0; opacity:1}
+        }
+
+        /* The Close Button */
+        .close {
+          /* color: white; */
+          float: right;
+          font-size: 28px;
+          font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+          color: #000;
+          text-decoration: none;
+          cursor: pointer;
+        }
+
+        .modal-header {
+          padding: 2px 16px;
+          background-color: #597259;
+          color: white;
+        }
+
+        .modal-body {padding: 2px 16px;}
+
+        .modal-footer {
+          padding: 2px 16px;
+          background-color: #597259;
+          color: white;
+        }
+
+
     </style>
 
   <script src="https://cdn.rawgit.com/konvajs/konva/2.0.3/konva.min.js"></script>
@@ -79,20 +152,83 @@
 </head>
 <body>
 
+<!-- Modal: Config-->
+  <div id="modalConfig" class="modal">
+
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="closeConfig" class="close"><i class="fa fa-window-close"></i></span>
+        <h2>Edit Configuration</h2>
+      </div>
+      <div class="modal-body">
+        <label>Wall Elastic Coeff:</label><input type=text id=elastCoeff maxlength="4" style="width: 2em"><br/>
+        <label>G constant:</label><input type=text id=constG maxlength="4" style="width: 2em">
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeConfig()"><i class="fa fa-check" aria-hidden="true"></i></button>
+        <button onclick="resetConfig()">Reset to default</button>
+      </div>
+    </div>
+  
+  </div>
+
+  <div id="newbodyprops" class="modal">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <span id="closeNewBody" class="close"><i class="fa fa-window-close"></i></span>
+        <h2>New Body</h2>
+      </div>
+
+      <div class="modal-body">
+
+        <table style="border: 0px; border-collapse: collapse;">
+          <tr>
+            <td><label id=lblRadius for=inRadius>Radius:</label></td>
+            <td><input type="text" id=inRadius name=inRadius value="10" size="5"></td>
+          </tr>
+
+          <tr>
+            <td><label id=lblDensity for=inDensity>Density:</label></td>
+            <td><input type="text" id=inDensity name=inDensity value="1" size="5"></td>
+          </tr>
+
+          <tr>
+            <td><label>Acceleration:</label></td>
+            <td><input type="text" id=inAx name=inAx value="0" size="5"></td>
+            <td><input type="text" id=inAy name=inAy value="0" size="5"></td>
+            <td>Value for acceleration (use Small values ~0.01)</td>
+          </tr>
+          <tr>
+            <td><label>Speed:</label></td>
+            <td><input type="text" id=inDx name=inDx value="0" size="5"></td>
+            <td><input type="text" id=inDy name=inDy value="0" size="5"></td>
+            <td>Values for speed (use values around 1)</td>
+          </tr>
+          <tr>
+            <td><label id=lblColor for="inColor">Color:</label></td>
+            <td><input type="color" id="inColor" name="inColor" value="#FFFFFF"></td>
+          </tr>
+        </table>
+
+      </div>
+      <div class="modal-footer">
+        <button onclick="confirmNew()">Confirm</button> 
+        <button onclick="cancelNew()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+
   <div id=toolbar>
     <div id=line1>
-      <span><button onclick="showConfig()"><i class="fa fa-cog" aria-hidden="true"></i></button>
-      <span><button onclick="reset()">Reset</button>
-      <span><button onclick="start()">Start</button>
-      <span><button  onclick="stop()">Stop</button>
-      <span><button  onclick="addNew()">Add</button>
-
-      <span style="visibility: hidden;" id="configpanel">
-        <label>Wall Elastic Coeff:</label><input type=text id=elastCoeff maxlength="4" style="width: 2em">&nbsp;
-        <label>G:</label><input type=text id=constG maxlength="4" style="width: 2em">
-        <button onclick="closeConfig()"><i class="fa fa-check" aria-hidden="true"></i></button>
-        <button onclick="resetConfig()">Reset</button>
-      </span>
+      <span><button id="showConfigBtn" onclick="showConfig()"><i class="fa fa-cog" aria-hidden="true"></i></button>
+      <span><button id="resetBtn" onclick="reset()"><i class="fa fa-refresh" aria-hidden="true"></i></button>
+      <span><button id="startBtn" onclick="start()" disabled><i class="fa fa-play-circle" aria-hidden="true"></i></button>
+      <span><button id="stopBtn" onclick="stop()" disabled><i class="fa fa-stop-circle" aria-hidden="true"></i></button>
+      <span><button id="newBtn" onclick="addNew()"><i class="fa fa-plus-square" aria-hidden="true"></i></button>
+        <span><button id="loadBtn" onclick="load()"><i class="fa fa-external-link-square" aria-hidden="true"></i></button>
+      <span><button id="saveBtn" onclick="save()" disabled><i class="fa fa-floppy-o" aria-hidden="true"></i></button>
     </div>
       <div style="visibility: hidden;" id="newbodyprops">
           <label id=lblRadius for=inRadius>Radius:</label>
@@ -122,7 +258,7 @@
       <th><i style="color: #EE0000;">x''</i></th>
       <th>Action</th>
     </tr></thead>
-    <tbody id=tbbodies>
+    <tbody id="tbbodies">
   </tbody>
   </table>
   <div id="container"></div>

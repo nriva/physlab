@@ -6,6 +6,8 @@ var defaultConfig = { elastCoeff : 0.75, G: 0.01,
 
 var config = defaultConfig;
 
+var systems = null;
+
 var newConf = localStorage.getItem("config");
 if(newConf) config = JSON.parse(newConf);
 
@@ -34,25 +36,38 @@ stage.add(layer);
 var centerX = stage.getWidth() / 2;
 var centerY = stage.getHeight() / 2;
 
-
-function showConfig()
+function enableBtn(id,enable)
 {
+  if(enable===true) {
+    if(document.getElementById(id).hasAttribute("disabled"))
+      document.getElementById(id).removeAttribute("disabled");
+  }
+  else if(enable===false) {
+    document.getElementById(id).setAttribute("disabled", "true");
+  }
+}
+
+
+function showConfig() {
+
+  var modal = document.getElementById("modalConfig");
+  modal.style.display = "block";
+  
   if(inEdit)
     return;
+
+  enableBtn("startBtn", false);
+  enableBtn("stopBtn", false);
 
   if(inConfig) {
     hideConfig();
     return;
   }
-    
-
   refreshConfig();
-  document.getElementById("configpanel").style="visibility:visible";
   inConfig = true;
 }
 
-function refreshConfig()
-{
+function refreshConfig() {
   document.getElementById('elastCoeff').value = config.elastCoeff;
   document.getElementById('constG').value = config.G;
 }
@@ -71,7 +86,6 @@ function closeConfig()
       localStorage.setItem("config", JSON.stringify(config));
     }
 
-
     hideConfig();
 }
 
@@ -82,56 +96,67 @@ function resetConfig() {
   closeConfig();
 }
 
-function hideConfig()
-{
-  document.getElementById("configpanel").style="visibility:hidden";
+function hideConfig() {
+  var modal = document.getElementById("modalConfig");
+  modal.style.display = "none";
   inConfig = false;
+  if(bodies.length>0) {
+    enableBtn("startBtn",true);
+    enableBtn("stopBtn", true);
+  }
+}
+
+function setAnimationOn(on)
+{
+  animationOn = on;
+  enableBtn("showConfigBtn", !animationOn);
+  enableBtn("newBtn", !animationOn);
 }
 
 function start() {
     if(!animationOn)
     {
-      animationOn = true;
+      setAnimationOn(true);
       anim.start();
     }
+}
+
+function stop() {
+  setAnimationOn(false);
+  anim.stop();
+}
+
+function reset() {
+  for(var i=0;i<bodies.length;i++) {
+    bodies[i].reset();
+    grpbodies[i].body.x(bodies[i].x);
+    grpbodies[i].body.y(bodies[i].y);
+    grpbodies[i].spd.points([0,0,0,0]);
+    grpbodies[i].acc.points([0,0,0,0]);
+    refreshBodyData(bodies[i]);
   }
-
-  function stop()
-  {
-    animationOn=false;
-    anim.stop();
-  }
-
-  function reset()
-  {
-    for(var i=0;i<bodies.length;i++) {
-      bodies[i].reset();
-      grpbodies[i].body.x(bodies[i].x);
-      grpbodies[i].body.y(bodies[i].y);
-      grpbodies[i].spd.points([0,0,0,0]);
-      grpbodies[i].acc.points([0,0,0,0]);
-      refreshBodyData(bodies[i]);
-    }
-
-
-    stage.draw();
-  }
+  stage.draw();
+}
   
-  function cancelNew()
-  {
+  function cancelNew() {
     inEdit = false;
-    document.getElementById("newbodyprops").style="visibility:hidden";
+
+    var modal = document.getElementById("newbodyprops");
+    modal.style.display = "none";
+
+
+
     document.getElementById("inRadius").value="10";
     document.getElementById("inAx").value="0";
     document.getElementById("inAy").value="0";
     document.getElementById("inDx").value="0";
     document.getElementById("inDy").value="0";
     document.getElementById("inDensity").value="1";
+    document.getElementById("inColor").value="#FFFFFF";
     
   }
 
-  function confirmNew()
-  {
+  function confirmNew() {
 
     var radius = Number(document.getElementById("inRadius").value);
     var ax = Number(document.getElementById("inAx").value);
@@ -139,15 +164,31 @@ function start() {
     var dx = Number(document.getElementById("inDx").value);
     var dy = Number(document.getElementById("inDy").value);
     var density = Number(document.getElementById("inDensity").value);
-
     var color = document.getElementById("inColor").value;
 
+      var conf = {index:bodies.length
+        ,x: centerX ,y: centerY
+        ,dx: dx, dy: dy
+        ,ax: ax, ay: ay
+        ,density: density
+        ,radius: radius
+      , color: color};
+
+    addNewBody(conf);
+
+    cancelNew();
+
+    stage.draw();
+    
+  }
+
+  function addNewBody(conf) {
 
     var grpbody1 = new Konva.Circle({
-    x: centerX, 
-    y: centerY,
-    radius: radius,
-    fill: color,// '#00D2FF',
+    x: conf.x, 
+    y: conf.y,
+    radius: conf.radius,
+    fill: conf.color,// '#00D2FF',
     strokeWidth: 0,
     draggable: true
     });
@@ -173,12 +214,7 @@ function start() {
     layer.add(acc1);
     layer.add(spd1);
 
-    var conf = {index:bodies.length
-      ,x: grpbody1.x() ,y: grpbody1.y()
-      ,dx: dx ,dy: dy
-      ,ax: ax,ay: ay
-      ,density:density
-      ,radius:radius};
+
 
     if(world==null)
       world={width:stage.getWidth(),height:stage.getHeight()};
@@ -187,15 +223,13 @@ function start() {
     //body1.setGraphObjs({body:grpbody1,acc:acc1,spd:spd1});
     bodies.push(body1);
     grpbodies.push({body:grpbody1,acc:acc1,spd:spd1});
-    addToList(body1,bodies.length-1,color);
+    addToList(body1,bodies.length-1,conf.color);
 
     grpbody1.on("dragend", function()
     {
-      debugger;
       var grp = arguments[0].target;
       var x = grp.x();
       var y = grp.y();
-      
 
       var index = grpbodies.findIndex( (elem) => elem.body == grp );
       bodies[index].setNewPos(x,y,!animationOn);
@@ -204,13 +238,20 @@ function start() {
       document.getElementById("y" + body1.index).innerText = Math.floor(y);
 
     }); 
-
-    cancelNew();
-    stage.draw();
+    refreshButtons();
+    
+    
+    
   }
 
-  function addToList(body,postion, color)
+  function refreshButtons()
   {
+    enableBtn("startBtn",bodies.length>0);
+    enableBtn("stopBtn", bodies.length>0);
+    enableBtn("saveBtn", bodies.length>0);
+  }
+
+  function addToList(body, postion, color) {
     //'<tr><td><span style="color: brown;">ID</span></td> <td>position</td> <td><button onclick="remove(1)">Remove</button></td></tr>';
 
 
@@ -219,6 +260,7 @@ function start() {
     // Create an empty <tr> element and add it to the 1st position of the table:
     var row = table.insertRow(table.length);
     row.id = 'row' + postion;
+    row.className = 'bodyrow';
 
     // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
     var cell1 = row.insertCell(0); cell1.style = "width: 10%";
@@ -232,11 +274,34 @@ function start() {
     cell2.innerHTML = `(<span id="x${postion}">${body._x}</span>,<span id="y${postion}">${body._y}</span>)`;
     cell3.innerHTML = `(<span id="sx${postion}">${body._dx}</span>,<span id="sy${postion}">${body._dy}</span>)`;
     cell4.innerHTML = `(<span id="ax${postion}">${body._ax}</span>,<span id="ay${postion}">${body._ay}</span>)`;
-    cell5.innerHTML = '<button onclick="remove(' + postion +')"><i class="fa fa-trash"></button>';
+    cell5.innerHTML = `<button onclick="remove(${postion},'${body.id}')"><i class="fa fa-trash"></button>`;
   }
 
-  function refreshBodyData(body)
+  function clearAllBodies()
   {
+    var rows = document.getElementsByClassName('bodyrow');
+    rowIds = [];
+    for(var i=0;i<rows.length;i++)
+    {
+      rowIds.push(rows[i].rowIndex);
+    }
+
+    rowIds.forEach((i)=>document.getElementById("tbbodies").deleteRow(0));
+
+    grpbodies.forEach(
+      (grpbody) => {
+        grpbody.body.destroy();
+        grpbody.acc.destroy();
+        grpbody.spd.destroy();
+      }
+    )
+    bodies = [];
+    grpbodies = [];
+    layer.draw();
+    refreshButtons();
+  }
+
+  function refreshBodyData(body) {
     var x = document.getElementById("x" + body.index);
     var y = document.getElementById("y" + body.index);
     var sx = document.getElementById("sx" + body.index);
@@ -253,24 +318,36 @@ function start() {
   }
 
 
-  function remove(id)
-  {
+  function remove(position, id) {
     if(bodies.length===0)
       return;
 
-    var row = document.getElementById('row'+id);
+    var row = document.getElementById('row'+position);
 
     if(row) {
       var i = row.rowIndex;
-      document.getElementById("bodies").deleteRow(i);    
+      document.getElementById("bodies").deleteRow(i);
+    }
+
+    var idx = 0;
+
+    for(var b=0;b<bodies.length;b++)
+    {
+      if(bodies[b].id === id)
+        idx = b;
     }
 
     var body = bodies[0];
     var grpbody = grpbodies[0];
     if(bodies.length>1) {
-      body = bodies.splice(id,1)[0];
-      grpbody = grpbodies.splice(id,1)[0];
+      body = bodies.splice(idx,1)[0];
+      grpbody = grpbodies.splice(idx,1)[0];
     }
+    else {
+      bodies = [];
+      grpbodies = [];
+    }
+    refreshButtons();
     if(body) {
       
       //body.grpobj.visible(false); 
@@ -284,10 +361,12 @@ function start() {
     }
   }
 
-  function addNew()
-  {
-    document.getElementById("newbodyprops").style="visibility:visible";
+  function addNew() {
+    var modal = document.getElementById("newbodyprops");
+    modal.style.display = "block";
     inEdit = true;
+    enableBtn("startBtn",false);
+    enableBtn("stopBtn", false);
   }
 
 
@@ -303,7 +382,6 @@ function start() {
     document.getElementById("ax" + body.index).innerText = Number(body.ax).toFixed(3);
     document.getElementById("ay" + body.index).innerText = Number(body.ay).toFixed(3);   
 
-    debugger;
     var x = body.x;
     var y = body.y;
 
@@ -314,7 +392,31 @@ function start() {
     grpbody.spd.points([x,y, x+body.dx * config.displayFactorSpeed, y+body.dy * config.displayFactorSpeed]);
     grpbody.acc.points([x,y, x+body.ax * config.displayFactorAccel, y+body.ay * config.displayFactorAccel]);
   }
+
+  function load() {
+
+    clearAllBodies();
+
+    var configurations = JSON.parse(localStorage.getItem("systems"));
+    configurations.forEach(
+      (conf) => {
+        addNewBody(conf, world);
+      }
+    );
+    stage.draw();
+  }
     
+  function save() {
+
+    var configurations = [];
+    bodies.forEach((body)=> {
+      var bodyConf = body.getConfiguration();
+      bodyConf.color = grpbodies[body.index].body.fill();
+      configurations.push(bodyConf);  
+    })
+
+     localStorage.setItem("systems", JSON.stringify(configurations));
+  }
 
   var anim = new Konva.Animation(function(frame) {
       collisionManagement(bodies, stop);
@@ -337,6 +439,7 @@ function start() {
 
   // Tooltips
 
+  /*
   var toolTipShown = false;
 
   var messages = {"t01": "Value for acceleration (use Small values ~0.01)",
@@ -355,9 +458,23 @@ function start() {
     document.getElementById("line2").style.visibility = bShow? "visible" : "hidden";
     toolTipShown = bShow;
   }
-
+*/
   function init() {
     document.getElementById("footerVersion").innerText = "Version " + version;
+
+    var span = document.getElementById("closeConfig");
+
+    span.onclick = hideConfig; /* function() {
+      var modal = document.getElementById("modalConfig");
+      modal.style.display = "none";
+    }*/
+
+    span = document.getElementById("closeNewBody");
+
+    span.onclick = cancelNew; /*function() {
+      var modal = document.getElementById("newbodyprops");
+      modal.style.display = "none";
+    }    */
   }
 
   init();
