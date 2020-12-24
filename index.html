@@ -94,12 +94,16 @@
           margin: auto;
           padding: 0;
           border: 1px solid #888;
-          width: 80%;
+          width: 400px;
           box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
           -webkit-animation-name: animatetop;
           -webkit-animation-duration: 0.4s;
           animation-name: animatetop;
           animation-duration: 0.4s
+        }
+
+        .modal-content-new-body {
+          width: 500px;
         }
 
         /* Add Animation */
@@ -145,7 +149,7 @@
 
     </style>
 
-  <script src="https://cdn.rawgit.com/konvajs/konva/2.0.3/konva.min.js"></script>
+  <script src="https://unpkg.com/konva@7.2.2/konva.min.js"></script>
   <script src="js/body.js"></script>
   <script src="js/phys.js"></script>
   <script src="js/grav.js"></script>
@@ -161,8 +165,19 @@
         <h2>Edit Configuration</h2>
       </div>
       <div class="modal-body">
-        <label>Wall Elastic Coeff:</label><input type=text id=elastCoeff maxlength="4" style="width: 2em"><br/>
-        <label>G constant:</label><input type=text id=constG maxlength="4" style="width: 2em">
+        <table style="border: 0px; border-collapse: collapse;">
+          <tr><td><label>Wall Elastic Coeff:</label></td><td><input type=text id=elastCoeff maxlength="4" style="width: 2em"></td></tr>
+          <tr><td><label>G constant:</label></td><td><input type=text id=constG maxlength="4" style="width: 2em"></td></tr>
+
+          <tr><td><label>Acceleration vector:</label></td></tr>
+          <tr><td><label>Visibile</label><td><input type="checkbox" id="accVis" name="accVis" value="true"></td></tr>
+          <tr><td><label>Magnify</label></td><td><input type=text id=accMagn maxlength="5" style="width: 3em"></td></tr>
+
+          <tr><td><label>Speed vector:</label></td></tr>
+          <tr><td><label>Visibile</label></td><td><input type="checkbox" id="spdVis" name="spdVis" value="true"></td></tr>
+          <tr><td><label>Magnify</label></td><td><input type=text id="spdMagn" maxlength="5" style="width: 3em"></td></tr>
+
+        </table>
       </div>
       <div class="modal-footer">
         <button onclick="closeConfig()"><i class="fa fa-check" aria-hidden="true"></i></button>
@@ -173,7 +188,7 @@
   </div>
 
   <div id="newbodyprops" class="modal">
-    <div class="modal-content">
+    <div class="modal-content modal-content-new-body">
 
       <div class="modal-header">
         <span id="closeNewBody" class="close"><i class="fa fa-window-close"></i></span>
@@ -209,12 +224,17 @@
             <td><label id=lblColor for="inColor">Color:</label></td>
             <td><input type="color" id="inColor" name="inColor" value="#FFFFFF"></td>
           </tr>
+          <tr>
+            <td><label id=lblMotionless for="inMotionless">Motionless:</label></td>
+            <td><input type="checkbox" id="inMotionless" name="inMotionless" value="true"></td>
+          </tr>
+
         </table>
 
       </div>
       <div class="modal-footer">
-        <button onclick="confirmNew()">Confirm</button> 
-        <button onclick="cancelNew()">Cancel</button>
+        <button onclick="confirmNew()"><i class="fa fa-check" aria-hidden="true"></i></button> 
+        <button onclick="cancelNew()"><i class="fa fa-ban" aria-hidden="true"></i></button>
       </div>
     </div>
   </div>

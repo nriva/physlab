@@ -6,6 +6,7 @@
 function Body(conf, world) {
 
 
+  this.index = conf.index;
 
   /**
    * Inital value for x.
@@ -27,9 +28,12 @@ function Body(conf, world) {
   this.dy=this._dy;
 
   this.density = conf.density;
-  this.index = conf.index;
-
   this.radius = conf.radius;
+
+  if(typeof conf.motionless==undefined)
+    this.motionless = false;
+  else
+    this.motionless = Boolean(conf.motionless);
 
   this.world = world;  
 
@@ -46,18 +50,15 @@ function Body(conf, world) {
   /**
    * @todo unused
    */
-  this.getMomentum = function()
-  {
+  this.getMomentum = function() {
     return this.getMass() * Math.sqrt(this.dx*this.dx + this.dy*this.dy);
   }
 
-  this.getRadius = function ()
-  {
+  this.getRadius = function() {
     return this.radius;
   }
 
-  this.setNewPos = function(x,y,initial)
-  {
+  this.setNewPos = function(x,y,initial) {
     if(initial) {
       this._x = x;
       this._y = y;
@@ -78,8 +79,11 @@ function Body(conf, world) {
     this.dy=this._dy;
   }
 
-  this.move = function()
-  {
+  this.move = function() {
+
+    if(this.motionless)
+      return;
+
     // Acceleration
     this.dx += this._ax + this.ax;
     this.dy += this._ay + this.ay;
@@ -122,6 +126,7 @@ function Body(conf, world) {
     conf.index = this.index;
   
     conf.radius = this.radius;
+    conf.motionless = this.motionless;
 
     return conf;
   }
