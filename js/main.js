@@ -8,7 +8,14 @@ var defaultConfig = {
   , speedVisible : true
   , accelVisible : true
   , spdColor: "#000000"
-  , accColor: "#EE0000" };
+  , accColor: "#EE0000"
+  , shadow: true };
+
+var demoSystem = [{"id":"B0000","x":960,"y":463.5,"ax":0,"ay":0,"dx":0,"dy":0,"density":1,"index":0,"radius":20,"motionless":true,"color":"#ffff00"},{"id":"B0001","x":957,"y":191.5,"ax":0,"ay":0,"dx":2,"dy":0,"density":1,"index":1,"radius":10,"motionless":false,"color":"#00ffbf"}];
+var demoMode = false;
+if(window.location.search) {
+  demoMode = window.location.search.indexOf('demo')>=0;
+}
 
 var config = defaultConfig;
 
@@ -20,8 +27,11 @@ var systems = null;
 
 // Ugly status vars
 var animationOn = false;
+var inAddNew = false;
 var inEdit = false;
 var inConfig = false;
+
+var currentEditId = -1;
 
 var width = window.innerWidth;
 var height = window.innerHeight-10;
@@ -43,9 +53,14 @@ stage.add(layer);
 var centerX = stage.getWidth() / 2;
 var centerY = stage.getHeight() / 2;
 
+function isEditing()
+{
+  return inAddNew || inEdit;
+}
+
 function showConfig() {
 
-  if(inEdit)
+  if(isEditing())
     return;
 
   if(inConfig) {
@@ -56,8 +71,8 @@ function showConfig() {
   var modal = document.getElementById("modalConfig");
   modal.style.display = "block";
 
-  enableBtn("startBtn", false);
-  enableBtn("stopBtn", false);
+  enableElem("startBtn", false);
+  enableElem("stopBtn", false);
 
   refreshConfig();
   inConfig = true;
@@ -69,9 +84,13 @@ function refreshConfig() {
 
   setCheckBox('accVis', config.accelVisible);
   document.getElementById('accMagn').value = config.displayFactorAccel;
+  document.getElementById('accColor').value = config.accColor;
 
   setCheckBox('spdVis', config.speedVisible);
   document.getElementById('spdMagn').value = config.displayFactorSpeed;
+  document.getElementById('spdColor').value = config.spdColor;
+
+  setCheckBox('shadowsVis', config.shadow);
 }
 
 function closeConfig() {
@@ -99,6 +118,11 @@ function closeConfig() {
     config.displayFactorSpeed = n;
   }
 
+  config.accColor = document.getElementById('accColor').value;
+  config.spdColor = document.getElementById('spdColor').value;
+
+  config.shadow = document.getElementById('shadowsVis').checked;
+
   localStorage.setItem("config", JSON.stringify(config));
   hideConfig();
 }
@@ -115,15 +139,23 @@ function hideConfig() {
   modal.style.display = "none";
   inConfig = false;
   if(bodies.length>0) {
-    enableBtn("startBtn",true);
-    enableBtn("stopBtn", true);
+    enableElem("startBtn",true);
+    enableElem("stopBtn", true);
   }
 }
 
 function setAnimationOn(on) {
   animationOn = on;
-  enableBtn("showConfigBtn", !animationOn);
-  enableBtn("newBtn", !animationOn);
+
+  var btns = document.getElementsByClassName('toolbar-edit-btn');
+  for (let btn of btns)
+    enableElem(btn, !animationOn);
+
+  btns = document.getElementsByClassName('body-list-button');
+  for (let btn of btns) {
+    enableElem(btn, !animationOn);
+  }
+
 }
 
 function start() {
@@ -151,13 +183,12 @@ function reset() {
   stage.draw();
 }
   
-function cancelNew() {
+function cancelBody() {
+  inAddNew = false;
   inEdit = false;
 
-  var modal = document.getElementById("newbodyprops");
+  var modal = document.getElementById("bodyattributes");
   modal.style.display = "none";
-
-
 
   document.getElementById("inRadius").value="10";
   document.getElementById("inAx").value="0";
@@ -167,10 +198,17 @@ function cancelNew() {
   document.getElementById("inDensity").value="1";
   document.getElementById("inColor").value="#FFFFFF";
   setCheckBox("inMotionless", false);
+
+  enableElem("inColor",true);
+  enableElem("inAx",true);
+  enableElem("inAy",true);
+  enableElem("inDx",true);
+  enableElem("inDy",true);
+
   
 }
 
-function confirmNew() {
+function confirmBody() {
 
   var radius = Number(document.getElementById("inRadius").value);
   var ax = Number(document.getElementById("inAx").value);
@@ -181,7 +219,8 @@ function confirmNew() {
   var color = document.getElementById("inColor").value;
   var motionless = document.getElementById("inMotionless").checked==true;
 
-    var conf = {index:bodies.length
+  if(inAddNew) {
+    var attr = {index:bodies.length
       ,x: centerX ,y: centerY
       ,dx: dx, dy: dy
       ,ax: ax, ay: ay
@@ -190,10 +229,19 @@ function confirmNew() {
       ,color: color
       ,motionless: motionless
     };
+    addNewBody(attr);
+  }
 
-  addNewBody(conf);
+  if(inEdit) {
+    var attr = {
+      density: density
+      ,radius: radius
+      ,motionless: motionless
+    };
+    editBody(attr);
+  }
 
-  cancelNew();
+  cancelBody();
 
   stage.draw();
   
@@ -207,8 +255,15 @@ function addNewBody(conf) {
   radius: conf.radius,
   fill: conf.color,// '#00D2FF',
   strokeWidth: 0,
-  draggable: true
+  draggable: true,
   });
+
+  if(config.shadow) {
+    grpbody1.shadowEnabled(true);
+    grpbody1.shadowColor('black');
+    grpbody1.shadowOffset({x: 2,y: 2});
+    grpbody1.shadowBlur(10);
+  }
 
   layer.add(grpbody1);
 
@@ -259,10 +314,27 @@ function addNewBody(conf) {
   refreshButtons();
 }
 
+function editBody(attr) {
+
+  if(currentEditId==-1)
+    return;
+
+  var body = this.bodies[currentEditId];
+  body.setAttributes(attr);
+
+  var graphbody = this.grpbodies[currentEditId].body;
+
+  graphbody.radius(attr.radius);
+
+  currentEditId = -1;
+  cancelBody();
+  refreshButtons();
+}
+
 function refreshButtons() {
-  enableBtn("startBtn",bodies.length>0);
-  enableBtn("stopBtn", bodies.length>0);
-  enableBtn("saveBtn", bodies.length>0);
+  enableElem("startBtn",bodies.length>0);
+  enableElem("stopBtn", bodies.length>0);
+  enableElem("saveBtn", bodies.length>0);
 }
 
 function addToList(body, postion, color) {
@@ -278,17 +350,18 @@ function addToList(body, postion, color) {
 
   // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
   var cell1 = row.insertCell(0); cell1.style = "width: 10%";
-  var cell2 = row.insertCell(1); cell2.style = "width: 25%";
-  var cell3 = row.insertCell(2); cell3.style = "width: 25%";
-  var cell4 = row.insertCell(3); cell4.style = "width: 25%";
+  var cell2 = row.insertCell(1); cell2.style = "width: 20%";
+  var cell3 = row.insertCell(2); cell3.style = "width: 20%";
+  var cell4 = row.insertCell(3); cell4.style = "width: 20%";
   var cell5 = row.insertCell(4); //cell5.style = "width: 10%";
 
   // Add some text to the new cells:
-  cell1.innerHTML = `<span style="color: '${color}';">${body.motionless?'<B>':''}${postion}${body.motionless?'</B>':''}</span>`;
+  cell1.innerHTML = `<span style="color: ${color};">${body.motionless?'<B>':''}${postion}${body.motionless?'</B>':''}</span>`;
   cell2.innerHTML = `(<span id="x${postion}">${body._x}</span>,<span id="y${postion}">${body._y}</span>)`;
   cell3.innerHTML = `(<span id="sx${postion}">${body._dx}</span>,<span id="sy${postion}">${body._dy}</span>)`;
   cell4.innerHTML = `(<span id="ax${postion}">${body._ax}</span>,<span id="ay${postion}">${body._ay}</span>)`;
-  cell5.innerHTML = `<button onclick="remove(${postion},'${body.id}')"><i class="fa fa-trash"></button>`;
+  cell5.innerHTML = `<button class="body-list-button" onclick="remove(${postion},'${body.id}')"><i class="fa fa-trash"></button>`;
+  cell5.innerHTML += `&nbsp;<button class="body-list-button" onclick="change(${postion},'${body.id}')"><i class="fa fa-pencil-square" aria-hidden="true"></i></button>`;
 }
 
 function clearAllBodies() {
@@ -330,6 +403,52 @@ function refreshBodyData(body) {
   ay.innerText=body.ay;
 }
 
+function change(position, id) {
+  var idx = -1;
+  for(var b=0;b<bodies.length;b++)
+  {
+    if(bodies[b].id === id)
+      idx = b;
+  }
+
+  if(idx==-1)
+    return;
+
+  currentEditId = idx;
+
+  var body = bodies[idx];
+  var attr = body.getAttributes();
+
+  var gphbody = this.grpbodies[idx].body;
+
+
+  var modalHeaderCaption = document.getElementById('modalHeaderCaption');
+  modalHeaderCaption.innerText = "Edit Body";
+
+  var modal = document.getElementById("bodyattributes");
+  modal.style.display = "block";
+  inEdit = true;
+  enableElem("startBtn",false);
+  enableElem("stopBtn", false);
+
+
+  document.getElementById("inRadius").value = attr.radius;
+  document.getElementById("inAx").value = attr.ax;
+  document.getElementById("inAy").value  = attr.ay;
+  document.getElementById("inDx").value = attr.dx;
+  document.getElementById("inDy").value = attr.dy;
+  document.getElementById("inDensity").value = attr.density;
+  document.getElementById("inColor").value = gphbody.fill();
+  document.getElementById("inMotionless").checked==attr.motionless;
+
+  enableElem("inColor", true);
+  enableElem("inAx", true);
+  enableElem("inAy", true);
+  enableElem("inDx", true);
+  enableElem("inDy", true);
+
+
+}
 
 function remove(position, id) {
   if(bodies.length===0)
@@ -375,11 +494,15 @@ function remove(position, id) {
 }
 
 function addNew() {
-  var modal = document.getElementById("newbodyprops");
+
+  var modalHeaderCaption = document.getElementById('modalHeaderCaption');
+  modalHeaderCaption.innerText = "New Body";
+
+  var modal = document.getElementById("bodyattributes");
   modal.style.display = "block";
-  inEdit = true;
-  enableBtn("startBtn",false);
-  enableBtn("stopBtn", false);
+  inAddNew = true;
+  enableElem("startBtn",false);
+  enableElem("stopBtn", false);
 }
 
 
@@ -409,8 +532,9 @@ function refresh(grpbody,body) {
 function load() {
 
   clearAllBodies();
-
   var configurations = JSON.parse(localStorage.getItem("systems"));
+  if(demoMode)
+    configurations = demoSystem;
   configurations.forEach(
     (conf) => {
       addNewBody(conf, world);
@@ -423,9 +547,9 @@ function save() {
 
   var configurations = [];
   bodies.forEach((body)=> {
-    var bodyConf = body.getConfiguration();
-    bodyConf.color = grpbodies[body.index].body.fill();
-    configurations.push(bodyConf);  
+    var bodyAttr = body.getAttributes();
+    bodyAttr.color = grpbodies[body.index].body.fill();
+    configurations.push(bodyAttr);  
   })
 
     localStorage.setItem("systems", JSON.stringify(configurations));
@@ -450,13 +574,25 @@ function save() {
   }, layer);
 
 
-function enableBtn(id,enable) {
+function enableElem(id,enable) {
+
+  var elem = null;
+  if(typeof id === "string")
+  {
+    elem = document.getElementById(id)
+  }
+  else
+    elem = id;
+
+  if(elem ==null)
+    return;
+
   if(enable===true) {
-    if(document.getElementById(id).hasAttribute("disabled"))
-      document.getElementById(id).removeAttribute("disabled");
+    if(elem.hasAttribute("disabled"))
+      elem.removeAttribute("disabled");
   }
   else if(enable===false) {
-    document.getElementById(id).setAttribute("disabled", "true");
+    elem.setAttribute("disabled", "true");
   }
 }
   
@@ -472,11 +608,15 @@ function init() {
 
   span.onclick = hideConfig;
 
-  span = document.getElementById("closeNewBody");
+  span = document.getElementById("closeBodyAttributes");
 
-  span.onclick = cancelNew;
+  span.onclick = cancelBody;
+
+  if(demoMode) {
+    load();
+    start();
+  }
 }
-
 
 init();
 

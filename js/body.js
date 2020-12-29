@@ -5,35 +5,30 @@
  */
 function Body(conf, world) {
 
+  this.setAttributes = function(attr) {
+
+    if(typeof attr.x != "undefined") this.x = attr.x;
+    if(typeof attr.y != "undefined") this.y = attr.y;
+    if(typeof attr.ax != "undefined") this._ax = attr.ax;
+    if(typeof attr.ay != "undefined") this._ay = attr.ay;
+    if(typeof attr.dx != "undefined") this.dx=attr.dx;
+    if(typeof attr.dy != "undefined") this.dy=attr.dy;
+
+    this.density = attr.density;
+    this.radius = attr.radius;
+    this.motionless = Boolean(conf.motionless);  
+  }
 
   this.index = conf.index;
 
-  /**
-   * Inital value for x.
-   */
-  this._x = conf.x;
-  /**
-   * Inital value for y.
-   */
-  this._y = conf.y;
-  this.x = conf.x;
-  this.y = conf.y;
-  this._ax=conf.ax;
-  this._ay= conf.ay;
+  this.setAttributes(conf);
+  this._x = this.x;
+  this._y = this.y;
+  this._dx= this.dx;
+  this._dy= this.dy;
   this.ax=0;
   this.ay=0;
-  this._dx=conf.dx;
-  this._dy=conf.dy;
-  this.dx=this._dx;
-  this.dy=this._dy;
 
-  this.density = conf.density;
-  this.radius = conf.radius;
-
-  if(typeof conf.motionless==undefined)
-    this.motionless = false;
-  else
-    this.motionless = Boolean(conf.motionless);
 
   this.world = world;  
 
@@ -111,7 +106,7 @@ function Body(conf, world) {
   /**
    * @returns the configuration of the initial state of the Body.
    */
-  this.getConfiguration = function() {
+  this.getAttributes = function() {
 
     var conf = {};
     conf.id = this.id;
@@ -130,6 +125,10 @@ function Body(conf, world) {
 
     return conf;
   }
+
+
+
+
 }
 
 

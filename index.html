@@ -102,7 +102,7 @@
           animation-duration: 0.4s
         }
 
-        .modal-content-new-body {
+        .modal-content-body {
           width: 500px;
         }
 
@@ -172,11 +172,14 @@
           <tr><td><label>Acceleration vector:</label></td></tr>
           <tr><td><label>Visibile</label><td><input type="checkbox" id="accVis" name="accVis" value="true"></td></tr>
           <tr><td><label>Magnify</label></td><td><input type=text id=accMagn maxlength="5" style="width: 3em"></td></tr>
+          <tr></tr><td><label id=lblAccColor for="accColor">Color:</label></td><td><input type="color" id="accColor" name="accColor" value="#FFFFFF"></td></tr>
 
           <tr><td><label>Speed vector:</label></td></tr>
           <tr><td><label>Visibile</label></td><td><input type="checkbox" id="spdVis" name="spdVis" value="true"></td></tr>
           <tr><td><label>Magnify</label></td><td><input type=text id="spdMagn" maxlength="5" style="width: 3em"></td></tr>
+          <tr></tr><td><label id=lblSpdColor for="spdColor">Color:</label></td><td><input type="color" id="spdColor" name="spdColor" value="#FFFFFF"></td></tr>
 
+          <tr><td><label>Shadows</label><td><input type="checkbox" id="shadowsVis" name="shadowsVis" value="true"></td></tr>
         </table>
       </div>
       <div class="modal-footer">
@@ -187,12 +190,12 @@
   
   </div>
 
-  <div id="newbodyprops" class="modal">
-    <div class="modal-content modal-content-new-body">
+  <div id="bodyattributes" class="modal">
+    <div class="modal-content modal-content-body">
 
       <div class="modal-header">
-        <span id="closeNewBody" class="close"><i class="fa fa-window-close"></i></span>
-        <h2>New Body</h2>
+        <span id="closeBodyAttributes" class="close"><i class="fa fa-window-close"></i></span>
+        <h2 id="modalHeaderCaption"></h2>
       </div>
 
       <div class="modal-body">
@@ -233,8 +236,8 @@
 
       </div>
       <div class="modal-footer">
-        <button onclick="confirmNew()"><i class="fa fa-check" aria-hidden="true"></i></button> 
-        <button onclick="cancelNew()"><i class="fa fa-ban" aria-hidden="true"></i></button>
+        <button onclick="confirmBody()"><i class="fa fa-check" aria-hidden="true"></i></button> 
+        <button onclick="cancelBody()"><i class="fa fa-ban" aria-hidden="true"></i></button>
       </div>
     </div>
   </div>
@@ -242,14 +245,16 @@
 
   <div id=toolbar>
     <div id=line1>
-      <span><button id="showConfigBtn" onclick="showConfig()"><i class="fa fa-cog" aria-hidden="true"></i></button>
-      <span><button id="resetBtn" onclick="reset()"><i class="fa fa-refresh" aria-hidden="true"></i></button>
-      <span><button id="startBtn" onclick="start()" disabled><i class="fa fa-play-circle" aria-hidden="true"></i></button>
-      <span><button id="stopBtn" onclick="stop()" disabled><i class="fa fa-stop-circle" aria-hidden="true"></i></button>
-      <span><button id="newBtn" onclick="addNew()"><i class="fa fa-plus-square" aria-hidden="true"></i></button>
-        <span><button id="loadBtn" onclick="load()"><i class="fa fa-external-link-square" aria-hidden="true"></i></button>
-      <span><button id="saveBtn" onclick="save()" disabled><i class="fa fa-floppy-o" aria-hidden="true"></i></button>
+      <button id="showConfigBtn" onclick="showConfig()" class="toolbar-edit-btn"><i class="fa fa-cog" aria-hidden="true"></i></button>
+      <button id="resetBtn" onclick="reset()" class="toolbar-edit-btn"><i class="fa fa-refresh" aria-hidden="true"></i></button>
+      <button id="addNewBtn" onclick="addNew()" class="toolbar-edit-btn"><i class="fa fa-plus-square" aria-hidden="true"></i></button>
+      <button id="loadBtn" onclick="load()" class="toolbar-edit-btn"><i class="fa fa-external-link-square" aria-hidden="true"></i></button>
+      <button id="saveBtn" onclick="save()" class="toolbar-edit-btn" disabled><i class="fa fa-floppy-o" aria-hidden="true"></i></button>&nbsp;
+      <button id="startBtn" onclick="start()" class="toolbar-anim-btn" disabled><i class="fa fa-play-circle" aria-hidden="true"></i></button>
+      <button id="stopBtn" onclick="stop()" class="toolbar-anim-btn" disabled><i class="fa fa-stop-circle" aria-hidden="true"></i></button>
+    
     </div>
+    <!--
       <div style="visibility: hidden;" id="newbodyprops">
           <label id=lblRadius for=inRadius>Radius:</label>
           <input type="text" id=inRadius name=inRadius value="10" size="5">
@@ -268,6 +273,7 @@
       <div id=line2 style="visibility: hidden;">
         <div id=tooltip2>tooltip text</div>
       </div>
+      -->
     </div>
   </div>
   <table id=bodies>
