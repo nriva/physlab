@@ -20,6 +20,7 @@ function Body(conf, world) {
   }
 
   this.index = conf.index;
+  this.color = conf.color;
 
   this.setAttributes(conf);
   this._x = this.x;
@@ -122,13 +123,45 @@ function Body(conf, world) {
   
     conf.radius = this.radius;
     conf.motionless = this.motionless;
+    conf.color = this.color;
 
     return conf;
   }
+}
+
+function System(name) {
+
+  this.name = name;
+  this.bodies = [];
+  this.gbodies = [];
+
+  this.config = {G: config.G, elastCoeff: config.elastCoeff};
+  this.defaultConfig = {G: config.G, elastCoeff: config.elastCoeff};
+  this.bodiesAttr = [];
+
+  this.clearAllBodies = function()
+  {
+    this.gbodies.forEach(
+      (grpbody) => {
+        grpbody.body.destroy();
+        if(grpbody.acc) grpbody.acc.destroy();
+        if(grpbody.spd) grpbody.spd.destroy();
+      }
+    )
+    //this.bodies = [];
+    this.gbodies = [];
+  }
 
 
-
-
+  this.getAttributes = function()
+  {
+    var bodiesAttr = [];
+    this.bodies.forEach((body)=> {
+      var bodyAttr = body.getAttributes();
+      bodiesAttr.push(bodyAttr);  
+    });
+    return bodiesAttr;
+  }
 }
 
 

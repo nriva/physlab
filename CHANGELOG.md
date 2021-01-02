@@ -6,8 +6,6 @@
 
 - Tutorial
 - Responsive Canvas
-- Demo mode
-- Multiple system management (load, save and display)
 
 ### Added
 
@@ -15,6 +13,7 @@
 - Edit of body attributes
 - Body shadow
 - Demo mode (via URL parameter `demo`)
+- Multiple system management (load, save and display)
 
 ### Changed
 
