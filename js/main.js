@@ -50,6 +50,7 @@ var currentEditId = -1;
 
 var world = { width: window.innerWidth,  height : window.innerHeight-10 };
 
+
 var stage = new Konva.Stage({
     container: 'container',
     width: world.width,
@@ -61,6 +62,29 @@ stage.add(layer);
 
 var centerX = stage.getWidth() / 2;
 var centerY = stage.getHeight() / 2;
+
+
+function fitStageIntoParentContainer() {
+  var container = document.querySelector('#stage-parent');
+
+  // now we need to fit stage into parent
+  var containerWidth = container.offsetWidth;
+  // to do this we need to scale the stage
+  var scale = containerWidth / world.width;
+
+  stage.width(world.width * scale);
+  stage.height(world.height * scale);
+  stage.scale({ x: scale, y: scale });
+  stage.draw();
+
+  centerX = stage.getWidth() / 2;
+  centerY = stage.getHeight() / 2;
+
+}
+
+fitStageIntoParentContainer();
+// adapt the stage on any window resize
+window.addEventListener('resize', fitStageIntoParentContainer);
 
 function isEditing()
 {
@@ -353,11 +377,11 @@ function change(position, id) {
   document.getElementById("inColor").value = gphbody.fill();
   document.getElementById("inMotionless").checked==attr.motionless;
 
-  enableElem("inColor", true);
-  enableElem("inAx", true);
-  enableElem("inAy", true);
-  enableElem("inDx", true);
-  enableElem("inDy", true);
+  enableElem("inColor", false);
+  enableElem("inAx", false);
+  enableElem("inAy", false);
+  enableElem("inDx", false);
+  enableElem("inDy", false);
 
 
 }
@@ -421,6 +445,12 @@ function addNew() {
   inAddNew = true;
   enableElem("startBtn",false);
   enableElem("stopBtn", false);
+
+  enableElem("inColor", true);
+  enableElem("inAx", true);
+  enableElem("inAy", true);
+  enableElem("inDx", true);
+  enableElem("inDy", true);
 }
 
 function refreshBodyData(body) {

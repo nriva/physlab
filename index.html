@@ -146,6 +146,10 @@
           color: white;
         }
 
+        #stage-parent {
+        width: 100%;
+      }
+
 
     </style>
 
@@ -289,7 +293,7 @@
     </tr>
     </table>
     </div>
-  <table style="width:100%">
+  <table style="width:100%" id=bodies>
     <thead><tr style="width:100%">
       <th style="width: 4%;">ID</th>
       <th style="width: 25%;"><i>x</i></th>
@@ -301,7 +305,9 @@
   </tbody>
   </table>
   </div>
-  <div id="container"></div>
+  <div id="stage-parent">
+    <div id="container"></div>
+  </div>
   <div id=footerVersion>Version</div> 
   <script src="js/main.js"></script>
    

@@ -1,11 +1,13 @@
 # PhysLabJs
 
+## Todo
+
+- Tutorial (Complete)
+- introduction of webpack
+- Import/export of systems
+- Smoother bounce on the walls
+
 ## Unrealeased
-
-### Todo
-
-- Tutorial
-- Responsive Canvas
 
 ### Added
 
@@ -14,6 +16,8 @@
 - Body shadow
 - Demo mode (via URL parameter `demo`)
 - Multiple system management (load, save and display)
+- Tutorial (Draft)
+- Responsive Canvas (only partial implementation)
 
 ### Changed
 
