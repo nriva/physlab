@@ -1,39 +1,53 @@
-function showConfig() {
+var utilModule = require('./util.js');
 
-    if(isEditing())
+var defaultConfig = { 
+  elastCoeff : 1
+  , G: 0.01
+  , displayFactorSpeed : 50
+  , displayFactorAccel : 1000
+  , speedVisible : true
+  , accelVisible : true
+  , spdColor: "#000000"
+  , accColor: "#EE0000"
+  , shadow: true };
+
+var config = defaultConfig;
+
+function showConfig(appStatus) {
+
+    if(appStatus.isEditing())
       return;
   
-    if(inConfig) {
-      //hideConfig();
+    if(appStatus.inConfig) {
       return;
     }
   
     var modal = document.getElementById("modalConfig");
     modal.style.display = "block";
   
-    enableElem("startBtn", false);
-    enableElem("stopBtn", false);
+    utilModule.enableElem("startBtn", false);
+    utilModule.enableElem("stopBtn", false);
   
-    refreshConfig();
-    inConfig = true;
+    refreshConfig(appStatus);
+    appStatus.inConfig = true;
   }
   
-  function refreshConfig() {
+  function refreshConfig(appStatus) {
     document.getElementById('defElastCoeff').value = config.elastCoeff;
     document.getElementById('defConstG').value = config.G;
   
-    setCheckBox('accVis', config.accelVisible);
+    utilModule.setCheckBox('accVis', config.accelVisible);
     document.getElementById('accMagn').value = config.displayFactorAccel;
     document.getElementById('accColor').value = config.accColor;
   
-    setCheckBox('spdVis', config.speedVisible);
+    utilModule.setCheckBox('spdVis', config.speedVisible);
     document.getElementById('spdMagn').value = config.displayFactorSpeed;
     document.getElementById('spdColor').value = config.spdColor;
   
-    setCheckBox('shadowsVis', config.shadow);
+    utilModule.setCheckBox('shadowsVis', config.shadow);
   }
   
-  function closeConfig() {
+  function closeConfig(appStatus) {
     var n = Number(document.getElementById('defElastCoeff').value);
     if(!isNaN(n)) {
       config.elastCoeff = n;
@@ -64,75 +78,87 @@ function showConfig() {
     config.shadow = document.getElementById('shadowsVis').checked;
   
     localStorage.setItem("config", JSON.stringify(config));
-    hideConfig();
+    hideConfig(appStatus);
   }
   
-  function resetConfig() {
+  function resetConfig(appStatus) {
     localStorage.removeItem("config");
     config = defaultConfig;
-    refreshConfig();
-    closeConfig();
+    refreshConfig(appStatus);
+    closeConfig(appStatus);
   }
   
-  function hideConfig() {
+  function hideConfig(appStatus) {
     var modal = document.getElementById("modalConfig");
     modal.style.display = "none";
-    inConfig = false;
-    if(currentSystem && currentSystem.bodies.length>0) {
-      enableElem("startBtn",true);
-      enableElem("stopBtn", true);
+    appStatus.inConfig = false;
+    if(appStatus.currentSystem && appStatus.currentSystem.bodies.length>0) {
+      utilModule.enableElem("startBtn",true);
+      utilModule.enableElem("stopBtn", true);
     }
   }
 
 
 
 
-  function showSysConfig() {
+  function showSysConfig(appStatus) {
 
-    if(isEditing())
+    if(appStatus.isEditing())
       return;
   
-    if(inConfig) {
-      //hideConfig();
+    if(appStatus.inConfig) {
       return;
     }
 
-    if(animationOn)
+    if(appStatus.animationOn)
       return;
   
     var modal = document.getElementById("modalSysConfig");
     modal.style.display = "block";
   
-    refreshSysConfig();
+    refreshSysConfig(appStatus);
   }
   
-  function refreshSysConfig() {
-    document.getElementById('elastCoeff').value = currentSystem.config.elastCoeff;
-    document.getElementById('constG').value = currentSystem.config.G;
+  function refreshSysConfig(appStatus) {
+    document.getElementById('elastCoeff').value = appStatus.currentSystem.config.elastCoeff;
+    document.getElementById('constG').value = appStatus.currentSystem.config.G;
   }
   
-  function closeSysConfig() {
+  function closeSysConfig(appStatus) {
     var n = Number(document.getElementById('elastCoeff').value);
     if(!isNaN(n)) {
-      currentSystem.config.elastCoeff = n;
+      appStatus.currentSystem.config.elastCoeff = n;
     }
   
     n = Number(document.getElementById('constG').value);
     if(!isNaN(n)) {
-      currentSystem.config.G = n;
+      appStatus.currentSystem.config.G = n;
     }
   
-    hideSysConfig();
+    hideSysConfig(appStatus);
   }
   
-  function resetSysConfig() {
-    currentSystem.config = currentSystem.defaultConfig;
+  function resetSysConfig(appStatus) {
+    appStatus.currentSystem.config = appStatus.currentSystem.defaultConfig;
 
-    hideSysConfig();
+    hideSysConfig(appStatus);
   }
   
-  function hideSysConfig() {
+  function hideSysConfig(appStatus) {
     var modal = document.getElementById("modalSysConfig");
     modal.style.display = "none";
   }
   
+  module.exports = {
+    closeConfig,
+    closeSysConfig,
+    hideConfig,
+    hideSysConfig,
+    refreshConfig,
+    resetSysConfig,
+    resetConfig,
+    resetSysConfig,
+    showConfig,
+    showSysConfig,
+    config
+  }

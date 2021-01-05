@@ -153,12 +153,6 @@
 
     </style>
 
-  <script src="https://unpkg.com/konva@7.2.2/konva.min.js"></script>
-  <script src="js/util.js"></script>
-  <script src="js/body.js"></script>
-  <script src="js/phys.js"></script>
-  <script src="js/grav.js"></script>
-  <script src="js/config.js"></script>
 </head>
 <body>
 
@@ -189,16 +183,15 @@
         </table>
       </div>
       <div class="modal-footer">
-        <button onclick="closeConfig()"><i class="fa fa-check" aria-hidden="true"></i></button>
-        <button onclick="resetConfig()">Reset to default</button>
+        <button id="closeConfigBtn"><i class="fa fa-check" aria-hidden="true"></i></button>
+        <button id="resetConfigBtn">Reset to default</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: SystemConfig-->
   <div id="modalSysConfig" class="modal">
-
-    <div class="modal-content">
+     <div class="modal-content">
       <div class="modal-header">
         <span id="closeSysConfig" class="close"><i class="fa fa-window-close"></i></span>
         <h2>Edit Sys Configuration</h2>
@@ -210,8 +203,8 @@
         </table>
       </div>
       <div class="modal-footer">
-        <button onclick="closeSysConfig()"><i class="fa fa-check" aria-hidden="true"></i></button>
-        <button onclick="resetSysConfig()">Reset to default</button>
+        <button id="closeSysConfigBtn"><i class="fa fa-check" aria-hidden="true"></i></button>
+        <button id="resetSysConfigBtn">Reset to default</button>
       </div>
     </div>
   </div>
@@ -258,13 +251,11 @@
             <td><label id=lblMotionless for="inMotionless">Motionless:</label></td>
             <td><input type="checkbox" id="inMotionless" name="inMotionless" value="true"></td>
           </tr>
-
         </table>
-
       </div>
       <div class="modal-footer">
-        <button onclick="confirmBodyEdit()"><i class="fa fa-check" aria-hidden="true"></i></button> 
-        <button onclick="cancelBodyEdit()"><i class="fa fa-ban" aria-hidden="true"></i></button>
+        <button id="confirmBodyEditBtn"><i class="fa fa-check" aria-hidden="true"></i></button> 
+        <button id="cancelBodyEditBtn"><i class="fa fa-ban" aria-hidden="true"></i></button>
       </div>
     </div>
   </div>
@@ -272,14 +263,13 @@
 
   <div id=toolbar>
     <div id=line1>
-      <button id="showConfigBtn" onclick="showConfig()" class="toolbar-edit-btn"><i class="fa fa-cog" aria-hidden="true"></i></button>
-      <button id="resetBtn" onclick="reset()" class="toolbar-edit-btn"><i class="fa fa-refresh" aria-hidden="true"></i></button>
-      <button id="addNewBtn" onclick="addNew()" class="toolbar-edit-btn"><i class="fa fa-plus-square" aria-hidden="true"></i></button>
-      <button id="loadBtn" onclick="load()" class="toolbar-edit-btn"><i class="fa fa-external-link-square" aria-hidden="true"></i></button>
-      <button id="saveBtn" onclick="save()" class="toolbar-edit-btn" disabled><i class="fa fa-floppy-o" aria-hidden="true"></i></button>&nbsp;
-      <button id="startBtn" onclick="start()" class="toolbar-anim-btn" disabled><i class="fa fa-play-circle" aria-hidden="true"></i></button>
-      <button id="stopBtn" onclick="stop()" class="toolbar-anim-btn" disabled><i class="fa fa-stop-circle" aria-hidden="true"></i></button>
-    
+      <button id="showConfigBtn" class="toolbar-edit-btn"><i class="fa fa-cog" aria-hidden="true"></i></button>
+      <button id="resetBtn"  class="toolbar-edit-btn"><i class="fa fa-refresh" aria-hidden="true"></i></button>
+      <button id="addNewBtn" class="toolbar-edit-btn"><i class="fa fa-plus-square" aria-hidden="true"></i></button>
+      <button id="loadBtn" class="toolbar-edit-btn"><i class="fa fa-external-link-square" aria-hidden="true"></i></button>
+      <button id="saveBtn"  class="toolbar-edit-btn" disabled><i class="fa fa-floppy-o" aria-hidden="true"></i></button>&nbsp;
+      <button id="startBtn"  class="toolbar-anim-btn" disabled><i class="fa fa-play-circle" aria-hidden="true"></i></button>
+      <button id="stopBtn" class="toolbar-anim-btn" disabled><i class="fa fa-stop-circle" aria-hidden="true"></i></button>
     </div>
   </div>
   <div class="body-list">
@@ -287,9 +277,9 @@
       <table style="width:100%">
         <tr>
       <td style="width:100%"><select id="systemName" style="width:100%" class="sys-edit-btn" onchange="changeSystem()"></select></td>
-      <td><button onclick="newSystem()" class="sys-edit-btn"><i class="fa fa-plus-square" aria-hidden="true"></i></button></td> 
-      <td><button onclick="removeSystem()" class="sys-edit-btn"><i class="fa fa-minus-square" aria-hidden="true"></i></button></td>
-      <td><button id="showSysConfigBtn" onclick="showSysConfig()" class="sys-edit-btn"><i class="fa fa-cog" aria-hidden="true"></i></button></td>
+      <td><button id="newSystemBtn" class="sys-edit-btn"><i class="fa fa-plus-square" aria-hidden="true"></i></button></td> 
+      <td><button id="removeSystemBtn" class="sys-edit-btn"><i class="fa fa-minus-square" aria-hidden="true"></i></button></td>
+      <td><button id="showSysConfigBtn" class="sys-edit-btn"><i class="fa fa-cog" aria-hidden="true"></i></button></td>
     </tr>
     </table>
     </div>
@@ -309,7 +299,7 @@
     <div id="container"></div>
   </div>
   <div id=footerVersion>Version</div> 
-  <script src="js/main.js"></script>
+  <script src="main.js"></script>
    
 </body>
 </html>

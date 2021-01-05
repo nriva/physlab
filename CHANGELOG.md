@@ -3,11 +3,14 @@
 ## Todo
 
 - Tutorial (Complete)
-- introduction of webpack
 - Import/export of systems
 - Smoother bounce on the walls
 
-## Unrealeased
+## 0.3.0-alpha
+
+- Tecnology refactor: node + webpack
+
+## 0.2.0-alpha
 
 ### Added
 

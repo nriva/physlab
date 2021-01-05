@@ -129,7 +129,7 @@ function Body(conf, world) {
   }
 }
 
-function System(name) {
+function System(name, config) {
 
   this.name = name;
   this.bodies = [];
@@ -165,4 +165,4 @@ function System(name) {
 }
 
 
-
+module.exports = {Body, System};
