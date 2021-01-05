@@ -48,7 +48,7 @@ var inEdit = false;
 var inConfig = false;
 var currentEditId = -1;
 
-var world = { width: window.innerWidth,  height : window.innerHeight-10 };
+var world = { width: window.innerWidth,  height: window.innerHeight-10 };
 
 
 var stage = new Konva.Stage({
@@ -65,7 +65,7 @@ var centerY = stage.getHeight() / 2;
 
 
 function fitStageIntoParentContainer() {
-  var container = document.querySelector('#stage-parent');
+  var container = document.getElementById('stage-parent');
 
   // now we need to fit stage into parent
   var containerWidth = container.offsetWidth;
@@ -641,10 +641,17 @@ function init() {
   }
 }
 
-var anim = new Konva.Animation(function(frame) {
+function detectCollision(o1, o2) {
+  var x = o1.x-o2.x;
+  var y = o1.y-o2.y;
+
+  return x*x+y*y< (o1.getRadius()+o2.getRadius())*(o1.getRadius()+o2.getRadius());
+}
+
+function animationFunction(frame) {
   var bodies = currentSystem.bodies;
   var gbodies = currentSystem.gbodies;
-  collisionManagement(bodies, stop);
+  collisionManagement(bodies, detectCollision, stop);
   if(animationOn)
   {
 
@@ -659,7 +666,9 @@ var anim = new Konva.Animation(function(frame) {
       refresh(gbodies[b],bodies[b]);
     }
   }
-}, layer);
+}
+
+var anim = new Konva.Animation(animationFunction, layer);
 
 init();
 
