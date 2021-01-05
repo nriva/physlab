@@ -2,11 +2,11 @@
 
 Small virtual lab to simulate attractive force between a set of round bodies.
 
-Made to paly with:
+Made to play with:
 
 * HTML
 * CSS
 * Vanilla JavaScript
 * Konva.js
 
-And to avoid using database!
+...and to avoid using database!

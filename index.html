@@ -22,7 +22,7 @@
           z-index: 1;
         }
 
-        #bodies { 
+        .body-list { 
           border: 1px solid white;
           border-collapse: collapse;
           margin-top: 5px;
@@ -30,7 +30,7 @@
         	position: absolute;
 	        top: 0;
 	        right: 0;
-	        width: 400px;
+	        width: 450px;
           z-index: 1;
         }
 
@@ -94,12 +94,16 @@
           margin: auto;
           padding: 0;
           border: 1px solid #888;
-          width: 80%;
+          width: 400px;
           box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
           -webkit-animation-name: animatetop;
           -webkit-animation-duration: 0.4s;
           animation-name: animatetop;
           animation-duration: 0.4s
+        }
+
+        .modal-content-body {
+          width: 500px;
         }
 
         /* Add Animation */
@@ -142,13 +146,19 @@
           color: white;
         }
 
+        #stage-parent {
+        width: 100%;
+      }
+
 
     </style>
 
-  <script src="https://cdn.rawgit.com/konvajs/konva/2.0.3/konva.min.js"></script>
+  <script src="https://unpkg.com/konva@7.2.2/konva.min.js"></script>
+  <script src="js/util.js"></script>
   <script src="js/body.js"></script>
   <script src="js/phys.js"></script>
   <script src="js/grav.js"></script>
+  <script src="js/config.js"></script>
 </head>
 <body>
 
@@ -161,23 +171,58 @@
         <h2>Edit Configuration</h2>
       </div>
       <div class="modal-body">
-        <label>Wall Elastic Coeff:</label><input type=text id=elastCoeff maxlength="4" style="width: 2em"><br/>
-        <label>G constant:</label><input type=text id=constG maxlength="4" style="width: 2em">
+        <table style="border: 0px; border-collapse: collapse;">
+          <tr><td><label>Default Wall Elastic Coeff:</label></td><td><input type=text id=defElastCoeff maxlength="4" style="width: 2em"></td></tr>
+          <tr><td><label>Default G constant:</label></td><td><input type=text id=defConstG maxlength="4" style="width: 2em"></td></tr>
+
+          <tr><td><label>Acceleration vector:</label></td></tr>
+          <tr><td><label>Visibile</label><td><input type="checkbox" id="accVis" name="accVis" value="true"></td></tr>
+          <tr><td><label>Magnify</label></td><td><input type=text id=accMagn maxlength="5" style="width: 3em"></td></tr>
+          <tr></tr><td><label id=lblAccColor for="accColor">Color:</label></td><td><input type="color" id="accColor" name="accColor" value="#FFFFFF"></td></tr>
+
+          <tr><td><label>Speed vector:</label></td></tr>
+          <tr><td><label>Visibile</label></td><td><input type="checkbox" id="spdVis" name="spdVis" value="true"></td></tr>
+          <tr><td><label>Magnify</label></td><td><input type=text id="spdMagn" maxlength="5" style="width: 3em"></td></tr>
+          <tr></tr><td><label id=lblSpdColor for="spdColor">Color:</label></td><td><input type="color" id="spdColor" name="spdColor" value="#FFFFFF"></td></tr>
+
+          <tr><td><label>Shadows</label><td><input type="checkbox" id="shadowsVis" name="shadowsVis" value="true"></td></tr>
+        </table>
       </div>
       <div class="modal-footer">
         <button onclick="closeConfig()"><i class="fa fa-check" aria-hidden="true"></i></button>
         <button onclick="resetConfig()">Reset to default</button>
       </div>
     </div>
-  
   </div>
 
-  <div id="newbodyprops" class="modal">
+  <!-- Modal: SystemConfig-->
+  <div id="modalSysConfig" class="modal">
+
     <div class="modal-content">
+      <div class="modal-header">
+        <span id="closeSysConfig" class="close"><i class="fa fa-window-close"></i></span>
+        <h2>Edit Sys Configuration</h2>
+      </div>
+      <div class="modal-body">
+        <table style="border: 0px; border-collapse: collapse;">
+          <tr><td><label>Wall Elastic Coeff:</label></td><td><input type=text id=elastCoeff maxlength="4" style="width: 2em"></td></tr>
+          <tr><td><label>G constant:</label></td><td><input type=text id=constG maxlength="4" style="width: 2em"></td></tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeSysConfig()"><i class="fa fa-check" aria-hidden="true"></i></button>
+        <button onclick="resetSysConfig()">Reset to default</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Body Attributes -->
+  <div id="bodyattributes" class="modal">
+    <div class="modal-content modal-content-body">
 
       <div class="modal-header">
-        <span id="closeNewBody" class="close"><i class="fa fa-window-close"></i></span>
-        <h2>New Body</h2>
+        <span id="closeBodyAttributes" class="close"><i class="fa fa-window-close"></i></span>
+        <h2 id="modalHeaderCaption"></h2>
       </div>
 
       <div class="modal-body">
@@ -209,12 +254,17 @@
             <td><label id=lblColor for="inColor">Color:</label></td>
             <td><input type="color" id="inColor" name="inColor" value="#FFFFFF"></td>
           </tr>
+          <tr>
+            <td><label id=lblMotionless for="inMotionless">Motionless:</label></td>
+            <td><input type="checkbox" id="inMotionless" name="inMotionless" value="true"></td>
+          </tr>
+
         </table>
 
       </div>
       <div class="modal-footer">
-        <button onclick="confirmNew()">Confirm</button> 
-        <button onclick="cancelNew()">Cancel</button>
+        <button onclick="confirmBodyEdit()"><i class="fa fa-check" aria-hidden="true"></i></button> 
+        <button onclick="cancelBodyEdit()"><i class="fa fa-ban" aria-hidden="true"></i></button>
       </div>
     </div>
   </div>
@@ -222,46 +272,42 @@
 
   <div id=toolbar>
     <div id=line1>
-      <span><button id="showConfigBtn" onclick="showConfig()"><i class="fa fa-cog" aria-hidden="true"></i></button>
-      <span><button id="resetBtn" onclick="reset()"><i class="fa fa-refresh" aria-hidden="true"></i></button>
-      <span><button id="startBtn" onclick="start()" disabled><i class="fa fa-play-circle" aria-hidden="true"></i></button>
-      <span><button id="stopBtn" onclick="stop()" disabled><i class="fa fa-stop-circle" aria-hidden="true"></i></button>
-      <span><button id="newBtn" onclick="addNew()"><i class="fa fa-plus-square" aria-hidden="true"></i></button>
-        <span><button id="loadBtn" onclick="load()"><i class="fa fa-external-link-square" aria-hidden="true"></i></button>
-      <span><button id="saveBtn" onclick="save()" disabled><i class="fa fa-floppy-o" aria-hidden="true"></i></button>
-    </div>
-      <div style="visibility: hidden;" id="newbodyprops">
-          <label id=lblRadius for=inRadius>Radius:</label>
-          <input type="text" id=inRadius name=inRadius value="10" size="5">
-          <label id=lblDensity for=inDensity>Density:</label>
-          <input type="text" id=inDensity name=inDensity value="1" size="5">
-          <label onmousemove="showTooltip(true,'t01')" onmouseout="showTooltip(false)">Acceleration:</label>
-          <input type="text" id=inAx name=inAx value="0" size="5">
-          <input type="text" id=inAy name=inAy value="0" size="5">
-          <label onmousemove="showTooltip(true,'t02')" onmouseout="showTooltip(false)">Speed:</label>
-          <input type="text" id=inDx name=inDx value="0" size="5">
-          <input type="text" id=inDy name=inDy value="0" size="5">
-          <label id=lblColor for="inColor">Color:</label><input type="color" id="inColor" name="inColor" value="#FFFFFF">
-          <button onclick="confirmNew()">Confirm</button> 
-          <button onclick="cancelNew()">Cancel</button>
-      </div>
-      <div id=line2 style="visibility: hidden;">
-        <div id=tooltip2>tooltip text</div>
-      </div>
+      <button id="showConfigBtn" onclick="showConfig()" class="toolbar-edit-btn"><i class="fa fa-cog" aria-hidden="true"></i></button>
+      <button id="resetBtn" onclick="reset()" class="toolbar-edit-btn"><i class="fa fa-refresh" aria-hidden="true"></i></button>
+      <button id="addNewBtn" onclick="addNew()" class="toolbar-edit-btn"><i class="fa fa-plus-square" aria-hidden="true"></i></button>
+      <button id="loadBtn" onclick="load()" class="toolbar-edit-btn"><i class="fa fa-external-link-square" aria-hidden="true"></i></button>
+      <button id="saveBtn" onclick="save()" class="toolbar-edit-btn" disabled><i class="fa fa-floppy-o" aria-hidden="true"></i></button>&nbsp;
+      <button id="startBtn" onclick="start()" class="toolbar-anim-btn" disabled><i class="fa fa-play-circle" aria-hidden="true"></i></button>
+      <button id="stopBtn" onclick="stop()" class="toolbar-anim-btn" disabled><i class="fa fa-stop-circle" aria-hidden="true"></i></button>
+    
     </div>
   </div>
-  <table id=bodies>
-    <thead><tr>
-      <th>ID</th>
-      <th><i>x</i></th>
-      <th><i style="color: black">x'</i></th>
-      <th><i style="color: #EE0000;">x''</i></th>
+  <div class="body-list">
+    <div>
+      <table style="width:100%">
+        <tr>
+      <td style="width:100%"><select id="systemName" style="width:100%" class="sys-edit-btn" onchange="changeSystem()"></select></td>
+      <td><button onclick="newSystem()" class="sys-edit-btn"><i class="fa fa-plus-square" aria-hidden="true"></i></button></td> 
+      <td><button onclick="removeSystem()" class="sys-edit-btn"><i class="fa fa-minus-square" aria-hidden="true"></i></button></td>
+      <td><button id="showSysConfigBtn" onclick="showSysConfig()" class="sys-edit-btn"><i class="fa fa-cog" aria-hidden="true"></i></button></td>
+    </tr>
+    </table>
+    </div>
+  <table style="width:100%" id=bodies>
+    <thead><tr style="width:100%">
+      <th style="width: 4%;">ID</th>
+      <th style="width: 25%;"><i>x</i></th>
+      <th style="width: 25%;"><i style="color: black">x'</i></th>
+      <th style="width: 25%;"><i style="color: #EE0000;">x''</i></th>
       <th>Action</th>
     </tr></thead>
     <tbody id="tbbodies">
   </tbody>
   </table>
-  <div id="container"></div>
+  </div>
+  <div id="stage-parent">
+    <div id="container"></div>
+  </div>
   <div id=footerVersion>Version</div> 
   <script src="js/main.js"></script>
    

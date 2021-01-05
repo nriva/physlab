@@ -5,31 +5,31 @@
  */
 function Body(conf, world) {
 
+  this.setAttributes = function(attr) {
 
+    if(typeof attr.x != "undefined") this.x = attr.x;
+    if(typeof attr.y != "undefined") this.y = attr.y;
+    if(typeof attr.ax != "undefined") this._ax = attr.ax;
+    if(typeof attr.ay != "undefined") this._ay = attr.ay;
+    if(typeof attr.dx != "undefined") this.dx=attr.dx;
+    if(typeof attr.dy != "undefined") this.dy=attr.dy;
 
-  /**
-   * Inital value for x.
-   */
-  this._x = conf.x;
-  /**
-   * Inital value for y.
-   */
-  this._y = conf.y;
-  this.x = conf.x;
-  this.y = conf.y;
-  this._ax=conf.ax;
-  this._ay= conf.ay;
+    this.density = attr.density;
+    this.radius = attr.radius;
+    this.motionless = Boolean(conf.motionless);  
+  }
+
+  this.index = conf.index;
+  this.color = conf.color;
+
+  this.setAttributes(conf);
+  this._x = this.x;
+  this._y = this.y;
+  this._dx= this.dx;
+  this._dy= this.dy;
   this.ax=0;
   this.ay=0;
-  this._dx=conf.dx;
-  this._dy=conf.dy;
-  this.dx=this._dx;
-  this.dy=this._dy;
 
-  this.density = conf.density;
-  this.index = conf.index;
-
-  this.radius = conf.radius;
 
   this.world = world;  
 
@@ -46,18 +46,15 @@ function Body(conf, world) {
   /**
    * @todo unused
    */
-  this.getMomentum = function()
-  {
+  this.getMomentum = function() {
     return this.getMass() * Math.sqrt(this.dx*this.dx + this.dy*this.dy);
   }
 
-  this.getRadius = function ()
-  {
+  this.getRadius = function() {
     return this.radius;
   }
 
-  this.setNewPos = function(x,y,initial)
-  {
+  this.setNewPos = function(x,y,initial) {
     if(initial) {
       this._x = x;
       this._y = y;
@@ -78,8 +75,11 @@ function Body(conf, world) {
     this.dy=this._dy;
   }
 
-  this.move = function()
-  {
+  this.move = function() {
+
+    if(this.motionless)
+      return;
+
     // Acceleration
     this.dx += this._ax + this.ax;
     this.dy += this._ay + this.ay;
@@ -107,7 +107,7 @@ function Body(conf, world) {
   /**
    * @returns the configuration of the initial state of the Body.
    */
-  this.getConfiguration = function() {
+  this.getAttributes = function() {
 
     var conf = {};
     conf.id = this.id;
@@ -122,8 +122,45 @@ function Body(conf, world) {
     conf.index = this.index;
   
     conf.radius = this.radius;
+    conf.motionless = this.motionless;
+    conf.color = this.color;
 
     return conf;
+  }
+}
+
+function System(name) {
+
+  this.name = name;
+  this.bodies = [];
+  this.gbodies = [];
+
+  this.config = {G: config.G, elastCoeff: config.elastCoeff};
+  this.defaultConfig = {G: config.G, elastCoeff: config.elastCoeff};
+  this.bodiesAttr = [];
+
+  this.clearAllBodies = function()
+  {
+    this.gbodies.forEach(
+      (grpbody) => {
+        grpbody.body.destroy();
+        if(grpbody.acc) grpbody.acc.destroy();
+        if(grpbody.spd) grpbody.spd.destroy();
+      }
+    )
+    //this.bodies = [];
+    this.gbodies = [];
+  }
+
+
+  this.getAttributes = function()
+  {
+    var bodiesAttr = [];
+    this.bodies.forEach((body)=> {
+      var bodyAttr = body.getAttributes();
+      bodiesAttr.push(bodyAttr);  
+    });
+    return bodiesAttr;
   }
 }
 
