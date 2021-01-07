@@ -4,7 +4,11 @@
     <meta charset="utf-8" />
     <title>PhysLabJs</title>
     <!-- Add icon library -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- 
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    -->
     <style>
 
         body {
@@ -266,8 +270,8 @@
       <button id="showConfigBtn" class="toolbar-edit-btn"><i class="fa fa-cog" aria-hidden="true"></i></button>
       <button id="resetBtn"  class="toolbar-edit-btn"><i class="fa fa-refresh" aria-hidden="true"></i></button>
       <button id="addNewBtn" class="toolbar-edit-btn"><i class="fa fa-plus-square" aria-hidden="true"></i></button>
-      <button id="loadBtn" class="toolbar-edit-btn"><i class="fa fa-external-link-square" aria-hidden="true"></i></button>
-      <button id="saveBtn"  class="toolbar-edit-btn" disabled><i class="fa fa-floppy-o" aria-hidden="true"></i></button>&nbsp;
+      <button id="loadBtn" class="toolbar-edit-btn"><i class="fa fa-folder-open" aria-hidden="true"></i></button>
+      <button id="saveBtn"  class="toolbar-edit-btn" disabled><i class="fa fa-floppy-o" aria-hidden="true"></i></button>
       <button id="startBtn"  class="toolbar-anim-btn" disabled><i class="fa fa-play-circle" aria-hidden="true"></i></button>
       <button id="stopBtn" class="toolbar-anim-btn" disabled><i class="fa fa-stop-circle" aria-hidden="true"></i></button>
     </div>
@@ -276,7 +280,7 @@
     <div>
       <table style="width:100%">
         <tr>
-      <td style="width:100%"><select id="systemName" style="width:100%" class="sys-edit-btn" onchange="changeSystem()"></select></td>
+      <td style="width:100%"><select id="systemName" style="width:100%" class="sys-edit-btn"></select></td>
       <td><button id="newSystemBtn" class="sys-edit-btn"><i class="fa fa-plus-square" aria-hidden="true"></i></button></td> 
       <td><button id="removeSystemBtn" class="sys-edit-btn"><i class="fa fa-minus-square" aria-hidden="true"></i></button></td>
       <td><button id="showSysConfigBtn" class="sys-edit-btn"><i class="fa fa-cog" aria-hidden="true"></i></button></td>
@@ -286,9 +290,9 @@
   <table style="width:100%" id=bodies>
     <thead><tr style="width:100%">
       <th style="width: 4%;">ID</th>
-      <th style="width: 25%;"><i>x</i></th>
-      <th style="width: 25%;"><i style="color: black">x'</i></th>
-      <th style="width: 25%;"><i style="color: #EE0000;">x''</i></th>
+      <th style="width: 25%;"><i><b>x</b></i></th>
+      <th style="width: 25%;"><i style="color: black"><b>x'</b></i></th>
+      <th style="width: 25%;"><i style="color: #EE0000;"><b>x''</b></i></th>
       <th>Action</th>
     </tr></thead>
     <tbody id="tbbodies">

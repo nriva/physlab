@@ -3,7 +3,7 @@
  * @param {*} conf Configuration for the new Body 
  * @param {*} world Configuration of the world
  */
-function Body(conf, world) {
+function Body(attributes, world, config)  {
 
   this.setAttributes = function(attr) {
 
@@ -16,13 +16,13 @@ function Body(conf, world) {
 
     this.density = attr.density;
     this.radius = attr.radius;
-    this.motionless = Boolean(conf.motionless);  
+    this.motionless = Boolean(attr.motionless);  
   }
 
-  this.index = conf.index;
-  this.color = conf.color;
+  this.index = attributes.index;
+  this.color = attributes.color;
 
-  this.setAttributes(conf);
+  this.setAttributes(attributes);
   this._x = this.x;
   this._y = this.y;
   this._dx= this.dx;
@@ -32,8 +32,9 @@ function Body(conf, world) {
 
 
   this.world = world;  
+  this.config = config;
 
-  this.id = "B" + String(conf.index).padStart(4, '0');
+  this.id = "B" + String(this.index).padStart(4, '0');
 
   this.getMass = function()
   {
@@ -86,11 +87,11 @@ function Body(conf, world) {
 
     // Bounce
     if(this.x + this.dx > this.world.width - this.radius || this.x + this.dx < this.radius) {
-        this.dx = - config.elastCoeff * this.dx;
+        this.dx = - this.config.elastCoeff * this.dx;
     }
 
     if(this.y + this.dy > this.world.height - this.radius || this.y + this.dy < this.radius) {
-        this.dy = - config.elastCoeff * this.dy;
+        this.dy = - this.config.elastCoeff * this.dy;
     }
 
     // Movement

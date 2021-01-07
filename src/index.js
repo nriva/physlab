@@ -1,20 +1,21 @@
+import tippy from 'tippy.js';
+import 'tippy.js/dist/tippy.css';
+
+var Konva = require('konva');
+const smalltalk = require('smalltalk');
+
 var configModule = require('./config.js');
 var bodyModule = require('./body.js');
-var Body = bodyModule.Body;
-var System = bodyModule.System;
-
 var utilModule = require('./util.js');
-var enableElem = utilModule.enableElem;
-var setCheckBox = utilModule.setCheckBox;
-
 var physModule = require('./phys');
 var  gravInteract = require('./grav').gravInteract;
 
-var Konva = require('konva');
+var Body = bodyModule.Body;
+var System = bodyModule.System;
+var enableElem = utilModule.enableElem;
+var setCheckBox = utilModule.setCheckBox;
 
 var version = "0.3.0-alpha";
-
-var config = configModule.config;
 
 var demoSystems = {
   "name1": {
@@ -40,15 +41,9 @@ if(window.location.search) {
   demoMode = window.location.search.indexOf('demo')>=0;
 }
 
-
-
 var systems = {};
-
-
 var currentEditId = -1;
-
 var world = { width: window.innerWidth,  height: window.innerHeight-10 };
-
 
 var stage = new Konva.Stage({
     container: 'container',
@@ -92,10 +87,11 @@ var appStatus = {
   inEdit: false,
   inConfig: false,
   currentSystem: null,
+  configuration: new configModule.Configuration(),
   isEditing : function() { return this.inAddNew || this.inEdit; }
 }
 
-function setAnimationOn(on) {
+function setAnimation(on) {
   appStatus.animationOn = on;
 
   var btns = document.getElementsByClassName('toolbar-edit-btn');
@@ -117,13 +113,13 @@ function setAnimationOn(on) {
 function start() {
     if(!appStatus.animationOn)
     {
-      setAnimationOn(true);
+      setAnimation(true);
       anim.start();
     }
 }
 
 function stop() {
-  setAnimationOn(false);
+  setAnimation(false);
   anim.stop();
 }
 
@@ -197,8 +193,9 @@ function confirmBodyEdit() {
       ,radius: radius
       ,motionless: motionless
     };
-    editBody(attr);
-    refreshBodyData(body);
+    var body = editBody(attr);
+    if(body!=null)
+      refreshBodyData(body);
   }
 
   cancelBodyEdit();
@@ -207,13 +204,10 @@ function confirmBodyEdit() {
   
 }
 
-function createNewBody(conf)
-{
-//var body1 = new Body(ax,ay,dx,dy,density,{body:grpbody1,acc:acc1,spd:spd1},bodies.length);
-var body1 = new Body(conf, world);
-//body1.setGraphObjs({body:grpbody1,acc:acc1,spd:spd1});
-appStatus.currentSystem.bodies.push(body1);
-return body1;
+function createNewBody(attributes) {
+  var body1 = new Body(attributes, world, appStatus.configuration);
+  appStatus.currentSystem.bodies.push(body1);
+  return body1;
 }
 
 function addNewBodyToCanvas(body) {
@@ -228,8 +222,7 @@ function addNewBodyToCanvas(body) {
   });
 
 
-  console.log('config.shadow + ' + config.shadow);
-  if(config.shadow) {
+  if(appStatus.configuration.shadow) {
     grpbody1.shadowEnabled(true);
     grpbody1.shadowColor('black');
     grpbody1.shadowOffset({x: 2, y: 2});
@@ -239,24 +232,23 @@ function addNewBodyToCanvas(body) {
   layer.add(grpbody1);
 
   var acc1 = null;
-  if(config.accelVisible) {
-    acc1 = new Konva.Line({
-      points: [0,0,0,0],
-      stroke: config.accColor,
-      draggable: false
-    });
-    layer.add(acc1);
-  }
+  acc1 = new Konva.Line({
+    points: [0,0,0,0],
+    stroke: appStatus.configuration.accColor,
+    draggable: false
+  });
+  layer.add(acc1);
+  acc1.visible(appStatus.configuration.accelVisible);
+    
 
   var spd1 = null;
-  if(config.speedVisible) {
-    spd1 = new Konva.Line({
-      points: [0,0,0,0],
-      stroke: config.spdColor,
-      draggable: false
-    });
-    layer.add(spd1);
-  }
+  spd1 = new Konva.Line({
+    points: [0,0,0,0],
+    stroke: appStatus.configuration.spdColor,
+    draggable: false
+  });
+  layer.add(spd1);
+  spd1.visible(appStatus.configuration.speedVisible);
 
   appStatus.currentSystem.gbodies.push({body:grpbody1,acc:acc1,spd:spd1});
   
@@ -282,7 +274,7 @@ function addNewBodyToCanvas(body) {
 function editBody(attr) {
 
   if(currentEditId==-1)
-    return;
+    return null;
 
   var body = appStatus.currentSystem.bodies[currentEditId];
   body.setAttributes(attr);
@@ -294,6 +286,7 @@ function editBody(attr) {
   currentEditId = -1;
   cancelBodyEdit();
   refreshButtons();
+  return body;
 }
 
 function refreshButtons() {
@@ -325,14 +318,19 @@ function addToBodyList(body, postion) {
   cell2.innerHTML = `(<span id="x${postion}">${body._x}</span>,<span id="y${postion}">${body._y}</span>)`;
   cell3.innerHTML = `(<span id="sx${postion}">${body._dx}</span>,<span id="sy${postion}">${body._dy}</span>)`;
   cell4.innerHTML = `(<span id="ax${postion}">${body._ax}</span>,<span id="ay${postion}">${body._ay}</span>)`;
-  cell5.innerHTML = `<button class="body-list-button" onclick="remove(${postion},'${body.id}')"><i class="fa fa-trash"></button>`;
-  cell5.innerHTML += `&nbsp;<button class="body-list-button" onclick="change(${postion},'${body.id}')"><i class="fa fa-pencil-square" aria-hidden="true"></i></button>`;
+  cell5.innerHTML = `<button id="removeBtn${postion}" class="body-list-button"><i class="fa fa-trash"></button>`;
+  cell5.innerHTML += `&nbsp;<button id="changeBtn${postion}" class="body-list-button"><i class="fa fa-pencil-square" aria-hidden="true"></i></button>`;
+
+
+  document.getElementById(`removeBtn${postion}`).onclick=function() { remove(postion, body.id) };
+  document.getElementById(`changeBtn${postion}`).onclick=function() { change(postion, body.id) };
+
 }
 
 
 function clearBodyList() {
   var rows = document.getElementsByClassName('bodyrow');
-  rowIds = [];
+  var rowIds = [];
   for(var i=0;i<rows.length;i++)
   {
     rowIds.push(rows[i].rowIndex);
@@ -380,7 +378,7 @@ function change(position, id) {
   document.getElementById("inDy").value = attr.dy;
   document.getElementById("inDensity").value = attr.density;
   document.getElementById("inColor").value = gphbody.fill();
-  document.getElementById("inMotionless").checked==attr.motionless;
+  utilModule.setCheckBox("inMotionless",attr.motionless);
 
   enableElem("inColor", false);
   enableElem("inAx", false);
@@ -487,27 +485,30 @@ function refresh(grpbody,body) {
   grpbody.body.y(y);
 
 
-  if(grpbody.spd) grpbody.spd.points([x,y, x+body.dx * config.displayFactorSpeed, y+body.dy * config.displayFactorSpeed]);
-  if(grpbody.acc) grpbody.acc.points([x,y, x+body.ax * config.displayFactorAccel, y+body.ay * config.displayFactorAccel]);
+  if(grpbody.spd) 
+    grpbody.spd.points([x,y, x+body.dx * appStatus.configuration.displayFactorSpeed, y+body.dy * appStatus.configuration.displayFactorSpeed]);
+  if(grpbody.acc) 
+    grpbody.acc.points([x,y, x+body.ax * appStatus.configuration.displayFactorAccel, y+body.ay * appStatus.configuration.displayFactorAccel]);
 }
 
 function load() {
   clearBodyList();
 
-  var select = document.getElementById("systemName");
+  var added = false;
+  var select = document.getElementById('systemName');
   var n = select.options.length;
   for (var i=0; i<n; i++) {
     select.remove(0);
   }
 
-  var initSystems = JSON.parse(localStorage.getItem("systems"));
+  var initSystems = JSON.parse(localStorage.getItem('systems'));
+  
   if(demoMode)
     initSystems = demoSystems;
   if(initSystems) {  
     var systemNameSel = document.getElementById('systemName');
-    var added = false;
-    for(var sysname in initSystems)
-    {
+    
+    for(var sysname in initSystems) {
       var option = document.createElement("option");
       option.text = sysname;
       systemNameSel.add(option);
@@ -515,9 +516,9 @@ function load() {
     }
 
     for(var sysname in initSystems) {
-      initSystem = initSystems[sysname];
+      var initSystem = initSystems[sysname];
 
-      systems[sysname] = new System(sysname, config);
+      systems[sysname] = new System(sysname, appStatus.configuration);
       systems[sysname].bodiesAttr = initSystem.bodiesAttr;
       systems[sysname].config =  initSystem.config;
     }
@@ -534,7 +535,6 @@ function save() {
 
   for(var sysname in systems) {
 
-/////
     var attr = systems[sysname].getAttributes();
 
     saveSystems[sysname] = { 
@@ -545,8 +545,6 @@ function save() {
   localStorage.setItem("systems", JSON.stringify(saveSystems));
 }
 
-
-const smalltalk = require('smalltalk');
 
 function newSystem(callback)
 {
@@ -562,7 +560,7 @@ function newSystem(callback)
         option.text = sysname;
         option.selected = true;
         systemNameSel.add(option);
-        var newSystem = new System(sysname, config);
+        var newSystem = new System(sysname, appStatus.configuration);
         systems[sysname] = newSystem;
         changeSystem();
         if(typeof callback=="function")
@@ -570,8 +568,8 @@ function newSystem(callback)
       }
     
   })
-  .catch(() => {
-      console.log('cancel');
+  .catch((err) => {
+      console.log('newSystem cancel ' + err);
   });
 }
 
@@ -588,7 +586,6 @@ function changeSystem()
 
   if(typeof appStatus.currentSystem == "undefined" || appStatus.currentSystem == null)
     return;
-
 
   if(appStatus.currentSystem.bodiesAttr.length>0) {
     for(var conf of appStatus.currentSystem.bodiesAttr) {
@@ -639,9 +636,8 @@ function removeSystem()
 function init() {
 
   var newConf = localStorage.getItem("config");
-  console.log(newConf);
-  if(newConf) config = JSON.parse(newConf);
-  console.log(config);
+  if(newConf) 
+    appStatus.configuration = new configModule.Configuration(JSON.parse(newConf));
 
   document.getElementById("footerVersion").innerText = "Version " + version;
 
@@ -653,11 +649,24 @@ function init() {
   span = document.getElementById("closeSysConfig");
   span.onclick = function(){configModule.hideSysConfig(appStatus)};
 
-  document.getElementById('closeSysConfigBtn').onclick=function(){configModule.closeSysConfig(appStatus)};
-  document.getElementById('resetSysConfigBtn').click=function(){configModule.resetSysConfig(appStatus)};
+  document.getElementById('closeSysConfigBtn').onclick=function() {
+      configModule.closeSysConfig(appStatus);
+      updateAllSystems();
+    };
+  document.getElementById('resetSysConfigBtn').click=function() {
+    configModule.resetSysConfig(appStatus);
+    updateAllSystems();
+  };
 
-  document.getElementById('closeConfigBtn').onclick=function(){configModule.closeConfig(appStatus)};
-  document.getElementById('resetConfigBtn').onclick=function(){configModule.resetConfig(appStatus)};
+  document.getElementById('closeConfigBtn').onclick=function() {
+    configModule.closeConfig(appStatus);
+    updateAllSystems();
+  };
+
+  document.getElementById('resetConfigBtn').onclick=function() {
+    configModule.resetConfig(appStatus);
+    updateAllSystems();
+  };
 
   document.getElementById('showConfigBtn').onclick = function() { configModule.showConfig(appStatus)};
   document.getElementById('showSysConfigBtn').onclick = function() {configModule.showSysConfig(appStatus);};
@@ -676,15 +685,66 @@ function init() {
   document.getElementById('newSystemBtn').onclick=newSystem;
   document.getElementById('removeSystemBtn').onclick=removeSystem;
 
+  document.getElementById('systemName').onchange=changeSystem;
+
   document.getElementById('confirmBodyEditBtn').onclick=confirmBodyEdit;
   document.getElementById('cancelBodyEditBtn').onclick=cancelBodyEdit;
 
+  tippy('#showConfigBtn', {
+    content: 'Open Config Dialog',
+  });
 
+  tippy('#addNewBtn', {
+    content: 'Add New Body',
+  });
+
+  tippy('#loadBtn', {
+    content: 'Load Systems from localstorage',
+  });
+  
+  tippy('#saveBtn', {
+    content: 'Save Systems to localstorage',
+  });
+
+  tippy('#startBtn', {
+    content: 'Start animation',
+  });
+  
+  tippy('#stopBtn', {
+    content: 'Stop animation',
+  });
+
+  tippy('#resetBtn', {
+    content: 'Reset bodies position',
+  });
+
+  tippy('#newSystemBtn', {
+    content: 'Create new system',
+  });
+  tippy('#removeSystemBtn', {
+    content: 'Delete current system',
+  });
+  tippy('#showSysConfigBtn', {
+    content: 'Show System config',
+  });
+  
   if(demoMode) {
     load();
     start();
   }
 }
+
+function updateAllSystems() {
+
+  appStatus.currentSystem.gbodies.forEach(
+    (elem) => {
+      elem.acc.visible(appStatus.configuration.accelVisible);
+      elem.spd.visible(appStatus.configuration.speedVisible);
+    }
+  );
+}
+
+
 
 function detectCollision(o1, o2) {
   var x = o1.x-o2.x;
@@ -703,7 +763,7 @@ function animationFunction(frame) {
     for(var i=0;i<bodies.length;i++)
       bodies[i].prepareForInteract();
 
-      physModule.interaction(bodies, config, gravInteract);
+      physModule.interaction(bodies, appStatus.configuration, gravInteract);
 
     for(var b=0;b<bodies.length;b++)
     {
