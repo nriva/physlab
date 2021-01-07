@@ -25,3 +25,5 @@ function enableElem(id,enable) {
 function setCheckBox(id, value) {
   document.getElementById(id).checked = value;
 }
+
+module.exports = {enableElem, setCheckBox};

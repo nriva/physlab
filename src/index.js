@@ -1,17 +1,22 @@
-var version = "0.2.0-alpha";
+import tippy from 'tippy.js';
+import 'tippy.js/dist/tippy.css';
 
-var defaultConfig = { 
-  elastCoeff : 1
-  , G: 0.01
-  , displayFactorSpeed : 50
-  , displayFactorAccel : 1000
-  , speedVisible : true
-  , accelVisible : true
-  , spdColor: "#000000"
-  , accColor: "#EE0000"
-  , shadow: true };
+var Konva = require('konva');
+const smalltalk = require('smalltalk');
 
-// TODO: save various systems
+var configModule = require('./config.js');
+var bodyModule = require('./body.js');
+var utilModule = require('./util.js');
+var physModule = require('./phys');
+var  gravInteract = require('./grav').gravInteract;
+
+var Body = bodyModule.Body;
+var System = bodyModule.System;
+var enableElem = utilModule.enableElem;
+var setCheckBox = utilModule.setCheckBox;
+
+var version = "0.3.0-alpha";
+
 var demoSystems = {
   "name1": {
   config: {G: 0.01,elastCoeff:1},
@@ -36,20 +41,9 @@ if(window.location.search) {
   demoMode = window.location.search.indexOf('demo')>=0;
 }
 
-var config = defaultConfig;
-
-var currentSystem=null;
 var systems = {};
-
-// Ugly status vars
-var animationOn = false;
-var inAddNew = false;
-var inEdit = false;
-var inConfig = false;
 var currentEditId = -1;
-
 var world = { width: window.innerWidth,  height: window.innerHeight-10 };
-
 
 var stage = new Konva.Stage({
     container: 'container',
@@ -86,59 +80,64 @@ fitStageIntoParentContainer();
 // adapt the stage on any window resize
 window.addEventListener('resize', fitStageIntoParentContainer);
 
-function isEditing()
-{
-  return inAddNew || inEdit;
+
+var appStatus = {
+  animationOn: false,
+  inAddNew: false,
+  inEdit: false,
+  inConfig: false,
+  currentSystem: null,
+  configuration: new configModule.Configuration(),
+  isEditing : function() { return this.inAddNew || this.inEdit; }
 }
 
-
-function setAnimationOn(on) {
-  animationOn = on;
+function setAnimation(on) {
+  appStatus.animationOn = on;
 
   var btns = document.getElementsByClassName('toolbar-edit-btn');
   for (let btn of btns)
-    enableElem(btn, !animationOn);
+    enableElem(btn, !appStatus.animationOn);
 
   btns = document.getElementsByClassName('body-list-button');
   for (let btn of btns) {
-    enableElem(btn, !animationOn);
+    enableElem(btn, !appStatus.animationOn);
   }
 
   btns = document.getElementsByClassName('sys-edit-btn');
   for (let btn of btns) {
-    enableElem(btn, !animationOn);
+    enableElem(btn, !appStatus.animationOn);
   }
 
 }
 
 function start() {
-    if(!animationOn)
+    if(!appStatus.animationOn)
     {
-      setAnimationOn(true);
+      setAnimation(true);
       anim.start();
     }
 }
 
 function stop() {
-  setAnimationOn(false);
+  setAnimation(false);
   anim.stop();
 }
 
 function reset() {
-  for(var i=0;i<currentSystem.bodies.length;i++) {
-    currentSystem.bodies[i].reset();
-    currentSystem.gbodies[i].body.x(currentSystem.bodies[i].x);
-    currentSystem.gbodies[i].body.y(currentSystem.bodies[i].y);
-    if(currentSystem.gbodies[i].spd) currentSystem.gbodies[i].spd.points([0,0,0,0]);
-    if(currentSystem.gbodies[i].acc) currentSystem.gbodies[i].acc.points([0,0,0,0]);
-    refreshBodyData(currentSystem.bodies[i]);
+  for(var i=0;i<appStatus.currentSystem.bodies.length;i++) {
+    appStatus.currentSystem.bodies[i].reset();
+    appStatus.currentSystem.gbodies[i].body.x(appStatus.currentSystem.bodies[i].x);
+    appStatus.currentSystem.gbodies[i].body.y(appStatus.currentSystem.bodies[i].y);
+    if(appStatus.currentSystem.gbodies[i].spd) appStatus.currentSystem.gbodies[i].spd.points([0,0,0,0]);
+    if(appStatus.currentSystem.gbodies[i].acc) appStatus.currentSystem.gbodies[i].acc.points([0,0,0,0]);
+    refreshBodyData(appStatus.currentSystem.bodies[i]);
   }
   stage.draw();
 }
   
 function cancelBodyEdit() {
-  inAddNew = false;
-  inEdit = false;
+  appStatus.inAddNew = false;
+  appStatus.inEdit = false;
 
   var modal = document.getElementById("bodyattributes");
   modal.style.display = "none";
@@ -172,8 +171,8 @@ function confirmBodyEdit() {
   var color = document.getElementById("inColor").value;
   var motionless = document.getElementById("inMotionless").checked==true;
 
-  if(inAddNew) {
-    var attr = {index: currentSystem.bodies.length
+  if(appStatus.inAddNew) {
+    var attr = {index: appStatus.currentSystem.bodies.length
       ,x: centerX ,y: centerY
       ,dx: dx, dy: dy
       ,ax: ax, ay: ay
@@ -188,14 +187,15 @@ function confirmBodyEdit() {
     addToBodyList(body, body.index);
   }
 
-  if(inEdit) {
+  if(appStatus.inEdit) {
     var attr = {
       density: density
       ,radius: radius
       ,motionless: motionless
     };
-    editBody(attr);
-    refreshBodyData(body);
+    var body = editBody(attr);
+    if(body!=null)
+      refreshBodyData(body);
   }
 
   cancelBodyEdit();
@@ -204,13 +204,10 @@ function confirmBodyEdit() {
   
 }
 
-function createNewBody(conf)
-{
-//var body1 = new Body(ax,ay,dx,dy,density,{body:grpbody1,acc:acc1,spd:spd1},bodies.length);
-var body1 = new Body(conf, world);
-//body1.setGraphObjs({body:grpbody1,acc:acc1,spd:spd1});
-currentSystem.bodies.push(body1);
-return body1;
+function createNewBody(attributes) {
+  var body1 = new Body(attributes, world, appStatus.configuration);
+  appStatus.currentSystem.bodies.push(body1);
+  return body1;
 }
 
 function addNewBodyToCanvas(body) {
@@ -224,7 +221,8 @@ function addNewBodyToCanvas(body) {
   draggable: true,
   });
 
-  if(config.shadow) {
+
+  if(appStatus.configuration.shadow) {
     grpbody1.shadowEnabled(true);
     grpbody1.shadowColor('black');
     grpbody1.shadowOffset({x: 2, y: 2});
@@ -234,26 +232,25 @@ function addNewBodyToCanvas(body) {
   layer.add(grpbody1);
 
   var acc1 = null;
-  if(config.accelVisible) {
-    acc1 = new Konva.Line({
-      points: [0,0,0,0],
-      stroke: config.accColor,
-      draggable: false
-    });
-    layer.add(acc1);
-  }
+  acc1 = new Konva.Line({
+    points: [0,0,0,0],
+    stroke: appStatus.configuration.accColor,
+    draggable: false
+  });
+  layer.add(acc1);
+  acc1.visible(appStatus.configuration.accelVisible);
+    
 
   var spd1 = null;
-  if(config.speedVisible) {
-    spd1 = new Konva.Line({
-      points: [0,0,0,0],
-      stroke: config.spdColor,
-      draggable: false
-    });
-    layer.add(spd1);
-  }
+  spd1 = new Konva.Line({
+    points: [0,0,0,0],
+    stroke: appStatus.configuration.spdColor,
+    draggable: false
+  });
+  layer.add(spd1);
+  spd1.visible(appStatus.configuration.speedVisible);
 
-  currentSystem.gbodies.push({body:grpbody1,acc:acc1,spd:spd1});
+  appStatus.currentSystem.gbodies.push({body:grpbody1,acc:acc1,spd:spd1});
   
 
 
@@ -263,9 +260,9 @@ function addNewBodyToCanvas(body) {
     var x = graphbody.x();
     var y = graphbody.y();
 
-    var index = currentSystem.gbodies.findIndex( (elem) => elem.body == graphbody );
-    var body = currentSystem.bodies[index];
-    body.setNewPos(x,y,!animationOn);
+    var index = appStatus.currentSystem.gbodies.findIndex( (elem) => elem.body == graphbody );
+    var body = appStatus.currentSystem.bodies[index];
+    body.setNewPos(x,y,!appStatus.animationOn);
 
     document.getElementById("x" + body.index).innerText = Math.floor(x);
     document.getElementById("y" + body.index).innerText = Math.floor(y);
@@ -277,24 +274,25 @@ function addNewBodyToCanvas(body) {
 function editBody(attr) {
 
   if(currentEditId==-1)
-    return;
+    return null;
 
-  var body = currentSystem.bodies[currentEditId];
+  var body = appStatus.currentSystem.bodies[currentEditId];
   body.setAttributes(attr);
 
-  var graphbody = currentSystem.gbodies[currentEditId].body;
+  var graphbody = appStatus.currentSystem.gbodies[currentEditId].body;
 
   graphbody.radius(attr.radius);
 
   currentEditId = -1;
   cancelBodyEdit();
   refreshButtons();
+  return body;
 }
 
 function refreshButtons() {
-  enableElem("startBtn",currentSystem.bodies.length>0);
-  enableElem("stopBtn", currentSystem.bodies.length>0);
-  enableElem("saveBtn", currentSystem.bodies.length>0);
+  enableElem("startBtn",appStatus.currentSystem.bodies.length>0);
+  enableElem("stopBtn", appStatus.currentSystem.bodies.length>0);
+  enableElem("saveBtn", appStatus.currentSystem.bodies.length>0);
 }
 
 function addToBodyList(body, postion) {
@@ -320,14 +318,19 @@ function addToBodyList(body, postion) {
   cell2.innerHTML = `(<span id="x${postion}">${body._x}</span>,<span id="y${postion}">${body._y}</span>)`;
   cell3.innerHTML = `(<span id="sx${postion}">${body._dx}</span>,<span id="sy${postion}">${body._dy}</span>)`;
   cell4.innerHTML = `(<span id="ax${postion}">${body._ax}</span>,<span id="ay${postion}">${body._ay}</span>)`;
-  cell5.innerHTML = `<button class="body-list-button" onclick="remove(${postion},'${body.id}')"><i class="fa fa-trash"></button>`;
-  cell5.innerHTML += `&nbsp;<button class="body-list-button" onclick="change(${postion},'${body.id}')"><i class="fa fa-pencil-square" aria-hidden="true"></i></button>`;
+  cell5.innerHTML = `<button id="removeBtn${postion}" class="body-list-button"><i class="fa fa-trash"></button>`;
+  cell5.innerHTML += `&nbsp;<button id="changeBtn${postion}" class="body-list-button"><i class="fa fa-pencil-square" aria-hidden="true"></i></button>`;
+
+
+  document.getElementById(`removeBtn${postion}`).onclick=function() { remove(postion, body.id) };
+  document.getElementById(`changeBtn${postion}`).onclick=function() { change(postion, body.id) };
+
 }
 
 
 function clearBodyList() {
   var rows = document.getElementsByClassName('bodyrow');
-  rowIds = [];
+  var rowIds = [];
   for(var i=0;i<rows.length;i++)
   {
     rowIds.push(rows[i].rowIndex);
@@ -341,9 +344,9 @@ function clearBodyList() {
 
 function change(position, id) {
   var idx = -1;
-  for(var b=0;b<currentSystem.bodies.length;b++)
+  for(var b=0;b<appStatus.currentSystem.bodies.length;b++)
   {
-    if(currentSystem.bodies[b].id === id)
+    if(appStatus.currentSystem.bodies[b].id === id)
       idx = b;
   }
 
@@ -352,10 +355,10 @@ function change(position, id) {
 
   currentEditId = idx;
 
-  var body = currentSystem.bodies[idx];
+  var body = appStatus.currentSystem.bodies[idx];
   var attr = body.getAttributes();
 
-  var gphbody = currentSystem.gbodies[idx].body;
+  var gphbody = appStatus.currentSystem.gbodies[idx].body;
 
 
   var modalHeaderCaption = document.getElementById('modalHeaderCaption');
@@ -363,7 +366,7 @@ function change(position, id) {
 
   var modal = document.getElementById("bodyattributes");
   modal.style.display = "block";
-  inEdit = true;
+  appStatus.inEdit = true;
   enableElem("startBtn",false);
   enableElem("stopBtn", false);
 
@@ -375,7 +378,7 @@ function change(position, id) {
   document.getElementById("inDy").value = attr.dy;
   document.getElementById("inDensity").value = attr.density;
   document.getElementById("inColor").value = gphbody.fill();
-  document.getElementById("inMotionless").checked==attr.motionless;
+  utilModule.setCheckBox("inMotionless",attr.motionless);
 
   enableElem("inColor", false);
   enableElem("inAx", false);
@@ -387,7 +390,7 @@ function change(position, id) {
 }
 
 function remove(position, id) {
-  if(currentSystem.bodies.length===0)
+  if(appStatus.currentSystem.bodies.length===0)
     return;
 
   var row = document.getElementById('row'+position);
@@ -399,21 +402,21 @@ function remove(position, id) {
 
   var idx = 0;
 
-  for(var b=0;b<currentSystem.bodies.length;b++)
+  for(var b=0;b<appStatus.currentSystem.bodies.length;b++)
   {
-    if(currentSystem.bodies[b].id === id)
+    if(appStatus.currentSystem.bodies[b].id === id)
       idx = b;
   }
 
-  var body = currentSystem.bodies[0];
-  var grpbody = currentSystem.gbodies[0];
-  if(currentSystem.bodies.length>1) {
-    body = currentSystem.bodies.splice(idx,1)[0];
-    grpbody = currentSystem.gbodies.splice(idx,1)[0];
+  var body = appStatus.currentSystem.bodies[0];
+  var grpbody = appStatus.currentSystem.gbodies[0];
+  if(appStatus.currentSystem.bodies.length>1) {
+    body = appStatus.currentSystem.bodies.splice(idx,1)[0];
+    grpbody = appStatus.currentSystem.gbodies.splice(idx,1)[0];
   }
   else {
-    currentSystem.bodies = [];
-    currentSystem.gbodies = [];
+    appStatus.currentSystem.bodies = [];
+    appStatus.currentSystem.gbodies = [];
   }
   refreshButtons();
   if(body) {
@@ -431,26 +434,31 @@ function remove(position, id) {
 
 function addNew() {
 
+  function callback() {
+    if(appStatus.currentSystem==null)
+      return;
+
+    var modalHeaderCaption = document.getElementById('modalHeaderCaption');
+    modalHeaderCaption.innerText = "New Body";
+
+    var modal = document.getElementById("bodyattributes");
+    modal.style.display = "block";
+    appStatus.inAddNew = true;
+    enableElem("startBtn",false);
+    enableElem("stopBtn", false);
+
+    enableElem("inColor", true);
+    enableElem("inAx", true);
+    enableElem("inAy", true);
+    enableElem("inDx", true);
+    enableElem("inDy", true);
+  }
+
   if(Object.keys(systems).length==0)
-    newSystem();
+    newSystem(callback);
+  else
+    callback();
 
-  if(currentSystem==null)
-    return;
-
-  var modalHeaderCaption = document.getElementById('modalHeaderCaption');
-  modalHeaderCaption.innerText = "New Body";
-
-  var modal = document.getElementById("bodyattributes");
-  modal.style.display = "block";
-  inAddNew = true;
-  enableElem("startBtn",false);
-  enableElem("stopBtn", false);
-
-  enableElem("inColor", true);
-  enableElem("inAx", true);
-  enableElem("inAy", true);
-  enableElem("inDx", true);
-  enableElem("inDy", true);
 }
 
 function refreshBodyData(body) {
@@ -477,27 +485,30 @@ function refresh(grpbody,body) {
   grpbody.body.y(y);
 
 
-  if(grpbody.spd) grpbody.spd.points([x,y, x+body.dx * config.displayFactorSpeed, y+body.dy * config.displayFactorSpeed]);
-  if(grpbody.acc) grpbody.acc.points([x,y, x+body.ax * config.displayFactorAccel, y+body.ay * config.displayFactorAccel]);
+  if(grpbody.spd) 
+    grpbody.spd.points([x,y, x+body.dx * appStatus.configuration.displayFactorSpeed, y+body.dy * appStatus.configuration.displayFactorSpeed]);
+  if(grpbody.acc) 
+    grpbody.acc.points([x,y, x+body.ax * appStatus.configuration.displayFactorAccel, y+body.ay * appStatus.configuration.displayFactorAccel]);
 }
 
 function load() {
   clearBodyList();
 
-  var select = document.getElementById("systemName");
+  var added = false;
+  var select = document.getElementById('systemName');
   var n = select.options.length;
   for (var i=0; i<n; i++) {
     select.remove(0);
   }
 
-  var initSystems = JSON.parse(localStorage.getItem("systems"));
+  var initSystems = JSON.parse(localStorage.getItem('systems'));
+  
   if(demoMode)
     initSystems = demoSystems;
   if(initSystems) {  
     var systemNameSel = document.getElementById('systemName');
-    var added = false;
-    for(var sysname in initSystems)
-    {
+    
+    for(var sysname in initSystems) {
       var option = document.createElement("option");
       option.text = sysname;
       systemNameSel.add(option);
@@ -505,9 +516,9 @@ function load() {
     }
 
     for(var sysname in initSystems) {
-      initSystem = initSystems[sysname];
+      var initSystem = initSystems[sysname];
 
-      systems[sysname] = new System(sysname);
+      systems[sysname] = new System(sysname, appStatus.configuration);
       systems[sysname].bodiesAttr = initSystem.bodiesAttr;
       systems[sysname].config =  initSystem.config;
     }
@@ -524,7 +535,6 @@ function save() {
 
   for(var sysname in systems) {
 
-/////
     var attr = systems[sysname].getAttributes();
 
     saveSystems[sysname] = { 
@@ -536,55 +546,62 @@ function save() {
 }
 
 
-
-
-function newSystem()
+function newSystem(callback)
 {
-  var sysname = window.prompt('New System Name:', 'System' + Object.keys(systems).length);
-  if(sysname)
-  {
+  var sysname = 'System' + Object.keys(systems).length;
+
+  smalltalk
+  .prompt('Question', 'Enter new System name', sysname)
+  .then((value) => {
+      sysname = value;
+      if(sysname) {
+        var systemNameSel = document.getElementById('systemName');
+        var option = document.createElement("option");
+        option.text = sysname;
+        option.selected = true;
+        systemNameSel.add(option);
+        var newSystem = new System(sysname, appStatus.configuration);
+        systems[sysname] = newSystem;
+        changeSystem();
+        if(typeof callback=="function")
+          callback();
+      }
     
-    var systemNameSel = document.getElementById('systemName');
-    var option = document.createElement("option");
-    option.text = sysname;
-    option.selected = true;
-    systemNameSel.add(option);
-    var newSystem = new System(sysname, config);
-    systems[sysname] = newSystem;
-    changeSystem();
-  }
+  })
+  .catch((err) => {
+      console.log('newSystem cancel ' + err);
+  });
 }
 
 function changeSystem()
 {
   clearBodyList();
-  if(typeof currentSystem != "undefined" && currentSystem != null) {
-    currentSystem.clearAllBodies();
+  if(typeof appStatus.currentSystem != "undefined" && appStatus.currentSystem != null) {
+    appStatus.currentSystem.clearAllBodies();
     stage.draw();
   }
 
   var systemName = document.getElementById('systemName').value;
-  currentSystem = systems[systemName];
+  appStatus.currentSystem = systems[systemName];
 
-  if(typeof currentSystem == "undefined" || currentSystem == null)
+  if(typeof appStatus.currentSystem == "undefined" || appStatus.currentSystem == null)
     return;
 
-
-  if(currentSystem.bodiesAttr.length>0) {
-    for(var conf of currentSystem.bodiesAttr) {
+  if(appStatus.currentSystem.bodiesAttr.length>0) {
+    for(var conf of appStatus.currentSystem.bodiesAttr) {
       var body = createNewBody(conf);  
       addNewBodyToCanvas(body);
     }
-    currentSystem.bodiesAttr = [];
+    appStatus.currentSystem.bodiesAttr = [];
   }
   else {
-    for(var body of currentSystem.bodies) { 
+    for(var body of appStatus.currentSystem.bodies) { 
       addNewBodyToCanvas(body);
     }
   }
 
   var postion = 0;
-  for(var body of currentSystem.bodies) {
+  for(var body of appStatus.currentSystem.bodies) {
     addToBodyList(body,postion++);
   }
   stage.draw();
@@ -593,11 +610,11 @@ function changeSystem()
 
 function removeSystem()
 {
-  if(currentSystem==null)
+  if(appStatus.currentSystem==null)
     return;
 
-  var sysname = currentSystem.name;
-  currentSystem.clearAllBodies();
+  var sysname = appStatus.currentSystem.name;
+  appStatus.currentSystem.clearAllBodies();
   clearBodyList();
   delete systems[sysname];
 
@@ -619,27 +636,115 @@ function removeSystem()
 function init() {
 
   var newConf = localStorage.getItem("config");
-  if(newConf) config = JSON.parse(newConf);
+  if(newConf) 
+    appStatus.configuration = new configModule.Configuration(JSON.parse(newConf));
 
   document.getElementById("footerVersion").innerText = "Version " + version;
 
   var span = null;
   
   span = document.getElementById("closeConfig");
-  span.onclick = hideConfig;
+  span.onclick = function() {configModule.hideConfig(appStatus);};
 
   span = document.getElementById("closeSysConfig");
-  span.onclick = hideSysConfig;
+  span.onclick = function(){configModule.hideSysConfig(appStatus)};
+
+  document.getElementById('closeSysConfigBtn').onclick=function() {
+      configModule.closeSysConfig(appStatus);
+      updateAllSystems();
+    };
+  document.getElementById('resetSysConfigBtn').click=function() {
+    configModule.resetSysConfig(appStatus);
+    updateAllSystems();
+  };
+
+  document.getElementById('closeConfigBtn').onclick=function() {
+    configModule.closeConfig(appStatus);
+    updateAllSystems();
+  };
+
+  document.getElementById('resetConfigBtn').onclick=function() {
+    configModule.resetConfig(appStatus);
+    updateAllSystems();
+  };
+
+  document.getElementById('showConfigBtn').onclick = function() { configModule.showConfig(appStatus)};
+  document.getElementById('showSysConfigBtn').onclick = function() {configModule.showSysConfig(appStatus);};
+
 
   span = document.getElementById("closeBodyAttributes");
-
   span.onclick = cancelBodyEdit;
 
+  document.getElementById('addNewBtn').onclick = addNew;
+  document.getElementById('resetBtn').onclick =  reset;
+  document.getElementById('loadBtn').onclick =  load;
+  document.getElementById('saveBtn').onclick =  save;
+  document.getElementById('startBtn').onclick =  start;
+  document.getElementById('stopBtn').onclick =  stop;
+
+  document.getElementById('newSystemBtn').onclick=newSystem;
+  document.getElementById('removeSystemBtn').onclick=removeSystem;
+
+  document.getElementById('systemName').onchange=changeSystem;
+
+  document.getElementById('confirmBodyEditBtn').onclick=confirmBodyEdit;
+  document.getElementById('cancelBodyEditBtn').onclick=cancelBodyEdit;
+
+  tippy('#showConfigBtn', {
+    content: 'Open Config Dialog',
+  });
+
+  tippy('#addNewBtn', {
+    content: 'Add New Body',
+  });
+
+  tippy('#loadBtn', {
+    content: 'Load Systems from localstorage',
+  });
+  
+  tippy('#saveBtn', {
+    content: 'Save Systems to localstorage',
+  });
+
+  tippy('#startBtn', {
+    content: 'Start animation',
+  });
+  
+  tippy('#stopBtn', {
+    content: 'Stop animation',
+  });
+
+  tippy('#resetBtn', {
+    content: 'Reset bodies position',
+  });
+
+  tippy('#newSystemBtn', {
+    content: 'Create new system',
+  });
+  tippy('#removeSystemBtn', {
+    content: 'Delete current system',
+  });
+  tippy('#showSysConfigBtn', {
+    content: 'Show System config',
+  });
+  
   if(demoMode) {
     load();
     start();
   }
 }
+
+function updateAllSystems() {
+
+  appStatus.currentSystem.gbodies.forEach(
+    (elem) => {
+      elem.acc.visible(appStatus.configuration.accelVisible);
+      elem.spd.visible(appStatus.configuration.speedVisible);
+    }
+  );
+}
+
+
 
 function detectCollision(o1, o2) {
   var x = o1.x-o2.x;
@@ -649,16 +754,16 @@ function detectCollision(o1, o2) {
 }
 
 function animationFunction(frame) {
-  var bodies = currentSystem.bodies;
-  var gbodies = currentSystem.gbodies;
-  collisionManagement(bodies, detectCollision, stop);
-  if(animationOn)
+  var bodies = appStatus.currentSystem.bodies;
+  var gbodies = appStatus.currentSystem.gbodies;
+  physModule.collisionManagement(bodies, detectCollision, stop);
+  if(appStatus.animationOn)
   {
 
     for(var i=0;i<bodies.length;i++)
       bodies[i].prepareForInteract();
 
-    interaction(bodies);
+      physModule.interaction(bodies, appStatus.configuration, gravInteract);
 
     for(var b=0;b<bodies.length;b++)
     {

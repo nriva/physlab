@@ -1,4 +1,4 @@
-function interact(o1,o2)
+function gravInteract(o1,o2,config)
 {
 
     var x = o1.x-o2.x;
@@ -22,3 +22,5 @@ function interact(o1,o2)
     if(x<0) fx2= - fx2; o2.ax += fx2;
     if(y<0) fy2= - fy2; o2.ay += fy2;
 }
+
+module.exports = {gravInteract};
