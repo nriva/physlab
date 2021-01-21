@@ -1,11 +1,11 @@
-
+var $=require('jquery');
 
 function enableElem(id,enable) {
 
   var elem = null;
   if(typeof id === "string")
   {
-    elem = document.getElementById(id)
+    elem = $('#' + id)[0];
   }
   else
     elem = id;

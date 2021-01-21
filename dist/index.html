@@ -5,160 +5,17 @@
     <title>PhysLabJs</title>
     <!-- Add icon library -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <!-- 
-    <script src="https://unpkg.com/@popperjs/core@2"></script>
-    <script src="https://unpkg.com/tippy.js@6"></script>
-    -->
-    <style>
-
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: darkslategrey;
-            color: whitesmoke;
-            font-family: Verdana, Geneva, Tahoma, sans-serif;
-            font-size: small;
-        }
-
-        #toolbar {
-          position: fixed; 
-          z-index: 1;
-        }
-
-        .body-list { 
-          border: 1px solid white;
-          border-collapse: collapse;
-          margin-top: 5px;
-          margin-right: 5px;
-        	position: absolute;
-	        top: 0;
-	        right: 0;
-	        width: 450px;
-          z-index: 1;
-        }
-
-        thead {
-          border: 1px solid white;
-          border-collapse: collapse;
-        }
-
-        th, #tbbodies td {
-          text-align: center;
-        }
-
-        button {
-          background-color: white;
-          padding: 4px 8px;
-          text-align: center;
-          text-decoration: none;
-          display: inline-block;
-          font-size: small;
-          border-radius: 4px;
-        }        
-
-        #footerVersion {
-          position: fixed; 
-          z-index: 1;
-          bottom: 0;
-	        right: 0;
-          width: 100%;
-          text-align: right;
-          margin-bottom: 5px;
-          margin-right: 5px;
-        }
-
-        #tooltip2 {
-          text-align: center;
-          width: 100%;
-          margin-top: 2px;
-          font-style: italic;
-        }
-
-
-        /* The Modal (background) */
-        .modal {
-          display: none; /* Hidden by default */
-          position: fixed; /* Stay in place */
-          z-index: 2; /* Sit on top */
-          padding-top: 100px; /* Location of the box */
-          left: 0;
-          top: 0;
-          width: 100%; /* Full width */
-          height: 100%; /* Full height */
-          overflow: auto; /* Enable scroll if needed */
-          background-color: rgb(0,0,0); /* Fallback color */
-          background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-        }
-
-        /* Modal Content */
-        .modal-content {
-          position: relative;
-          background-color: darkslategrey;
-          margin: auto;
-          padding: 0;
-          border: 1px solid #888;
-          width: 400px;
-          box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
-          -webkit-animation-name: animatetop;
-          -webkit-animation-duration: 0.4s;
-          animation-name: animatetop;
-          animation-duration: 0.4s
-        }
-
-        .modal-content-body {
-          width: 500px;
-        }
-
-        /* Add Animation */
-        @-webkit-keyframes animatetop {
-          from {top:-300px; opacity:0} 
-          to {top:0; opacity:1}
-        }
-
-        @keyframes animatetop {
-          from {top:-300px; opacity:0}
-          to {top:0; opacity:1}
-        }
-
-        /* The Close Button */
-        .close {
-          /* color: white; */
-          float: right;
-          font-size: 28px;
-          font-weight: bold;
-        }
-
-        .close:hover,
-        .close:focus {
-          color: #000;
-          text-decoration: none;
-          cursor: pointer;
-        }
-
-        .modal-header {
-          padding: 2px 16px;
-          background-color: #597259;
-          color: white;
-        }
-
-        .modal-body {padding: 2px 16px;}
-
-        .modal-footer {
-          padding: 2px 16px;
-          background-color: #597259;
-          color: white;
-        }
-
-        #stage-parent {
-        width: 100%;
-      }
-
-
-    </style>
-
 </head>
 <body>
+
+  <script id="bodyrow-template" type="text/x-handlebars-template">
+    <td><span style="color: {{color}}" class="{{className}}">{{postion}}</span></td>
+    <td>(<span id="x{{postion}}">{{x}}</span>,<span id="y{{postion}}">{{y}}</span>)</td>
+    <td>(<span id="sx{{postion}}">{{dx}}</span>,<span id="sy{{postion}}">{{dy}}</span>)</td>
+    <td>(<span id="ax{{postion}}">{{ax}}</span>,<span id="ay{{postion}}">{{ay}}</span>)</td>
+    <td><button id="removeBtn{{postion}}" class="body-list-button"><i class="fa fa-trash"></i></button></td>
+    <td><button id="changeBtn{{postion}}" class="body-list-button"><i class="fa fa-pencil-square" aria-hidden="true"></i></button></td>
+  </script>
 
 <!-- Modal: Config-->
   <div id="modalConfig" class="modal">
@@ -170,8 +27,8 @@
       </div>
       <div class="modal-body">
         <table style="border: 0px; border-collapse: collapse;">
+          <tbody id="configTableBody">
           <tr><td><label>Default Wall Elastic Coeff:</label></td><td><input type=text id=defElastCoeff maxlength="4" style="width: 2em"></td></tr>
-          <tr><td><label>Default G constant:</label></td><td><input type=text id=defConstG maxlength="4" style="width: 2em"></td></tr>
 
           <tr><td><label>Acceleration vector:</label></td></tr>
           <tr><td><label>Visibile</label><td><input type="checkbox" id="accVis" name="accVis" value="true"></td></tr>
@@ -184,6 +41,11 @@
           <tr></tr><td><label id=lblSpdColor for="spdColor">Color:</label></td><td><input type="color" id="spdColor" name="spdColor" value="#FFFFFF"></td></tr>
 
           <tr><td><label>Shadows</label><td><input type="checkbox" id="shadowsVis" name="shadowsVis" value="true"></td></tr>
+
+          <!--
+          <tr><td><label>Default G constant:</label></td><td><input type=text id=defConstG maxlength="4" style="width: 2em"></td></tr>
+          -->
+          </tbody>
         </table>
       </div>
       <div class="modal-footer">
@@ -202,8 +64,12 @@
       </div>
       <div class="modal-body">
         <table style="border: 0px; border-collapse: collapse;">
+          <tbody id="configSysTableBody">
           <tr><td><label>Wall Elastic Coeff:</label></td><td><input type=text id=elastCoeff maxlength="4" style="width: 2em"></td></tr>
+          <!--
           <tr><td><label>G constant:</label></td><td><input type=text id=constG maxlength="4" style="width: 2em"></td></tr>
+          -->
+        </tbody>
         </table>
       </div>
       <div class="modal-footer">
@@ -225,6 +91,7 @@
       <div class="modal-body">
 
         <table style="border: 0px; border-collapse: collapse;">
+          
           <tr>
             <td><label id=lblRadius for=inRadius>Radius:</label></td>
             <td><input type="text" id=inRadius name=inRadius value="10" size="5"></td>
@@ -235,22 +102,40 @@
             <td><input type="text" id=inDensity name=inDensity value="1" size="5"></td>
           </tr>
 
-          <tr>
+          <tr class="init-body-attr hide">
+            <td><label>Initial Acceleration:</label></td>
+            <td><i class="fa fa-long-arrow-right" aria-hidden="true"></i><input type="text" id=inAxIni name=inAxIni value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-down" aria-hidden="true"></i><input type="text" id=inAyIni name=inAyIni value="0" size="5"></td>
+            <td>Value for initial acceleration (use Small values ~0.01)</td>
+          </tr>
+
+          <tr class="body-attr">
             <td><label>Acceleration:</label></td>
-            <td><input type="text" id=inAx name=inAx value="0" size="5"></td>
-            <td><input type="text" id=inAy name=inAy value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-right" aria-hidden="true"></i><input type="text" id=inAx name=inAx value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-down" aria-hidden="true"></i><input type="text" id=inAy name=inAy value="0" size="5"></td>
             <td>Value for acceleration (use Small values ~0.01)</td>
           </tr>
-          <tr>
-            <td><label>Speed:</label></td>
-            <td><input type="text" id=inDx name=inDx value="0" size="5"></td>
-            <td><input type="text" id=inDy name=inDy value="0" size="5"></td>
-            <td>Values for speed (use values around 1)</td>
+
+          <tr class="init-body-attr hide">
+            <td><label>Intial Speed:</label></td>
+            <td><i class="fa fa-long-arrow-right" aria-hidden="true"></i><input type="text" id=inDxIni name=inDxIni value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-down" aria-hidden="true"></i><input type="text" id=inDyIni name=inDyIi value="0" size="5"></td>
+            <td>Values for initial speed (use values around 1)</td>
           </tr>
+
+          <tr class="body-attr">
+            <td><label>Speed:</label></td>
+            <td><i class="fa fa-long-arrow-right" aria-hidden="true"></i><input type="text" id=inDx name=inDx value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-down" aria-hidden="true"></i><input type="text" id=inDy name=inDy value="0" size="5"></td>
+            <td>Values for speed (use values around 1)</td>
+          
+          </tr>
+
           <tr>
             <td><label id=lblColor for="inColor">Color:</label></td>
             <td><input type="color" id="inColor" name="inColor" value="#FFFFFF"></td>
           </tr>
+
           <tr>
             <td><label id=lblMotionless for="inMotionless">Motionless:</label></td>
             <td><input type="checkbox" id="inMotionless" name="inMotionless" value="true"></td>
@@ -265,8 +150,8 @@
   </div>
 
 
-  <div id=toolbar>
-    <div id=line1>
+  <div id="toolbar">
+    <div id="line1">
       <button id="showConfigBtn" class="toolbar-edit-btn"><i class="fa fa-cog" aria-hidden="true"></i></button>
       <button id="resetBtn"  class="toolbar-edit-btn"><i class="fa fa-refresh" aria-hidden="true"></i></button>
       <button id="addNewBtn" class="toolbar-edit-btn"><i class="fa fa-plus-square" aria-hidden="true"></i></button>
@@ -276,6 +161,9 @@
       <button id="stopBtn" class="toolbar-anim-btn" disabled><i class="fa fa-stop-circle" aria-hidden="true"></i></button>
     </div>
   </div>
+  <div style="position: absolute; left: 50%; z-index: 1;">
+    <h2 id="interactionName" style="position: relative; left: -50%; display: inline-block; padding: 0; ">Interaction Name</h2>
+  </div>
   <div class="body-list">
     <div>
       <table style="width:100%">
@@ -284,10 +172,15 @@
       <td><button id="newSystemBtn" class="sys-edit-btn"><i class="fa fa-plus-square" aria-hidden="true"></i></button></td> 
       <td><button id="removeSystemBtn" class="sys-edit-btn"><i class="fa fa-minus-square" aria-hidden="true"></i></button></td>
       <td><button id="showSysConfigBtn" class="sys-edit-btn"><i class="fa fa-cog" aria-hidden="true"></i></button></td>
+      <td><button id="downloadSysBtn" class="sys-edit-btn"><i class="fa fa-download" aria-hidden="true"></i></button></td>
+      <td><button id="uploadSysBtn" class="sys-edit-btn"><i class="fa fa-upload" aria-hidden="true"></i></button></td>
+    </tr>
+    <tr>
+      <td><input style="display:none" type="file" id="file-input" /></td>
     </tr>
     </table>
     </div>
-  <table style="width:100%" id=bodies>
+  <table style="width:100%" id="bodies">
     <thead><tr style="width:100%">
       <th style="width: 4%;">ID</th>
       <th style="width: 25%;"><i><b>x</b></i></th>
@@ -302,7 +195,7 @@
   <div id="stage-parent">
     <div id="container"></div>
   </div>
-  <div id=footerVersion>Version</div> 
+  <div id="footerVersion">Version</div> 
   <script src="main.js"></script>
    
 </body>

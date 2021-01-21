@@ -3,12 +3,30 @@
 ## Todo
 
 - Tutorial (Complete)
-- Import/export of systems
 - Smoother bounce on the walls
+
+## 0.4.0-alpha
+
+### Added
+
+- Import/export of systems
+- Added the possibility to have more types of system
+- Added the possibility for each system to have its own specific configuration
+- Provided the new type of system "PID Control Simulation"
+- Class `Body`: attribute `name` and max speed (`max_dx`,`max_dy`)
+- Body attributes editable: acceleration and speed
+
+### Changed
+
+- Technology refactor: jQuery
+- Various internal refactor
+- Separated the styles in a css file
 
 ## 0.3.0-alpha
 
-- Tecnology refactor: node + webpack
+### Changed
+
+- Technology refactor: node + webpack
 - Minor bug fix
 
 ## 0.2.0-alpha

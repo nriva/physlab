@@ -1,0 +1,172 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: darkslategrey;
+    color: whitesmoke;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: small;
+}
+
+#toolbar {
+  position: fixed; 
+  z-index: 1;
+}
+
+.body-list { 
+  border: 1px solid white;
+  border-collapse: collapse;
+  margin-top: 5px;
+  margin-right: 5px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 450px;
+  z-index: 1;
+}
+
+thead {
+  border: 1px solid white;
+  border-collapse: collapse;
+}
+
+th, #tbbodies td {
+  text-align: center;
+}
+
+button {
+  background-color: white;
+  padding: 4px 8px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: small;
+  border-radius: 4px;
+}        
+
+#footerVersion {
+  position: fixed; 
+  z-index: 1;
+  bottom: 0;
+    right: 0;
+  width: 100%;
+  text-align: right;
+  margin-bottom: 5px;
+  margin-right: 5px;
+}
+
+#tooltip2 {
+  text-align: center;
+  width: 100%;
+  margin-top: 2px;
+  font-style: italic;
+}
+
+
+/* The Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 2; /* Sit on top */
+  padding-top: 100px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-content {
+  position: relative;
+  background-color: darkslategrey;
+  margin: auto;
+  padding: 0;
+  border: 1px solid #888;
+  width: 400px;
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+  -webkit-animation-name: animatetop;
+  -webkit-animation-duration: 0.4s;
+  animation-name: animatetop;
+  animation-duration: 0.4s
+}
+
+.modal-content-body {
+  width: 620px;
+}
+
+/* Add Animation */
+@-webkit-keyframes animatetop {
+  from {top:-300px; opacity:0} 
+  to {top:0; opacity:1}
+}
+
+@keyframes animatetop {
+  from {top:-300px; opacity:0}
+  to {top:0; opacity:1}
+}
+
+/* The Close Button */
+.close {
+  /* color: white; */
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.modal-header {
+  padding: 2px 16px;
+  background-color: #597259;
+  color: white;
+}
+
+.modal-body {
+  padding: 2px 16px;
+}
+
+.modal-footer {
+  padding: 2px 16px;
+  background-color: #597259;
+  color: white;
+}
+
+#stage-parent {
+  width: 100%;
+}
+
+.bodyNameListMotionless {
+  font-weight: bold;
+}
+
+.bodyNameListMotionless::after {
+  content: "*";
+}
+
+#bodies span {
+  font-size: smaller;
+}
+
+.init-body-attr.show {
+  display: table-row;
+}
+
+.init-body-attr.hide {
+  display: none;
+}
+
+.body-attr.show {
+  display: table-row;
+}
+
+.body-attr.hide {
+  display: none;
+}

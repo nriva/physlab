@@ -1,49 +1,67 @@
+//import { app } from 'electron/main';
 import tippy from 'tippy.js';
 import 'tippy.js/dist/tippy.css';
 
-var Konva = require('konva');
+import './style.css';
+
+const Handlebars = require('handlebars');
+
+const Konva = require('konva');
 const smalltalk = require('smalltalk');
+const $ = require( "jquery" );
+
 
 var configModule = require('./config.js');
 var bodyModule = require('./body.js');
 var utilModule = require('./util.js');
 var physModule = require('./phys');
-var  gravInteract = require('./grav').gravInteract;
+const interactionModuleChase = require('./models/chase'); // require('./grav');
+const interactionModuleGrav = require('./models/grav'); // require('./grav');
 
 var Body = bodyModule.Body;
 var System = bodyModule.System;
 var enableElem = utilModule.enableElem;
-var setCheckBox = utilModule.setCheckBox;
+//var setCheckBox = utilModule.setCheckBox;
 
-var version = "0.3.0-alpha";
+var version = "0.4.0-alpha";
 
-var demoSystems = {
-  "name1": {
-  config: {G: 0.01,elastCoeff:1},
-  bodiesAttr: [
-    {"id":"B0000","x":960,"y":463.5,"ax":0,"ay":0,"dx":0,"dy":0,"density":1,"index":0,"radius":20,"motionless":false,"color":"yellow"}
-    ,{"id":"B0001","x":957,"y":191.5,"ax":0,"ay":0,"dx":2,"dy":0,"density":1,"index":1,"radius":10,"motionless":false,"color":"lightblue"}
-  ],
-  bodies : [],
-  gbodies : []
-  },
-  "name2" : {
-    config: {G: 0.01,elastCoeff:1},
-    bodiesAttr: [
-      {"id":"B0000","x":960,"y":463.5,"ax":0,"ay":0,"dx":0,"dy":0,"density":1,"index":0,"radius":20,"motionless":false,"color":"pink"}
-      ,{"id":"B0001","x":957,"y":191.5,"ax":0,"ay":0,"dx":2,"dy":0,"density":1,"index":1,"radius":10,"motionless":false,"color":"blue"}],
-      bodies : [],
-      gbodies : []
-  }
-};
+var interactionModule = interactionModuleGrav;
+
 var demoMode = false;
 if(window.location.search) {
-  demoMode = window.location.search.indexOf('demo')>=0;
+
+  var qpos = window.location.search.indexOf('?');
+  if(qpos>-1) {
+    var parts = window.location.search.substring(qpos+1).split('&');
+    parts.forEach((part)=> {
+      var subs = part.split('=');
+      if(subs.length==1) {
+        if(subs[0].trim()=="demo")
+          demoMode = true;
+      } else {
+        switch(subs[0].trim()) {
+          case "i":
+            switch(subs[1].trim()) {
+              case "chase":
+                interactionModule = interactionModuleChase;
+                break;
+            }
+        }
+      }
+    });
+  }
+
+  //demoMode = window.location.search.indexOf('demo')>=0;
 }
+
+const  interact = interactionModule.interactFunction;
+var extraConfigurationUI = interactionModule.extraConfigurationRows;
+var extraSysConfUI = interactionModule.extraSystemConfRows;
 
 var systems = {};
 var currentEditId = -1;
-var world = { width: window.innerWidth,  height: window.innerHeight-10 };
+var world = { width: window.innerWidth,  height: window.innerHeight /*-10*/ };
+//var world = { width: 3000,  height: 2000 };
 
 var stage = new Konva.Stage({
     container: 'container',
@@ -57,18 +75,22 @@ stage.add(layer);
 var centerX = stage.getWidth() / 2;
 var centerY = stage.getHeight() / 2;
 
-
 function fitStageIntoParentContainer() {
   var container = document.getElementById('stage-parent');
 
   // now we need to fit stage into parent
   var containerWidth = container.offsetWidth;
+  var containerHeight = container.offsetHeight;
   // to do this we need to scale the stage
-  var scale = containerWidth / world.width;
+  //var scale = containerWidth / world.width;
 
-  stage.width(world.width * scale);
-  stage.height(world.height * scale);
-  stage.scale({ x: scale, y: scale });
+  stage.width( containerWidth /* world.width * scale*/);
+  stage.height(containerHeight);
+
+  world.width = containerWidth;
+  world.height = containerHeight;
+
+  //stage.scale({ x: scale, y: scale });
   stage.draw();
 
   centerX = stage.getWidth() / 2;
@@ -80,6 +102,7 @@ fitStageIntoParentContainer();
 // adapt the stage on any window resize
 window.addEventListener('resize', fitStageIntoParentContainer);
 
+var demoSystems = interactionModule.buildDemoSystems(centerX, centerY);
 
 var appStatus = {
   animationOn: false,
@@ -88,8 +111,18 @@ var appStatus = {
   inConfig: false,
   currentSystem: null,
   configuration: new configModule.Configuration(),
+  moduleConfig : [],
   isEditing : function() { return this.inAddNew || this.inEdit; }
 }
+
+appStatus.moduleConfig = interactionModule.moduleConfig;
+appStatus.moduleConfig.forEach((elem)=>{
+  appStatus.configuration[elem.propDefName] = elem.defValue; 
+});
+
+var bodyrow_templateHtml = $("#bodyrow-template").html();
+var bodyrow_template = Handlebars.compile(bodyrow_templateHtml);
+
 
 function setAnimation(on) {
   appStatus.animationOn = on;
@@ -116,12 +149,15 @@ function start() {
       setAnimation(true);
       anim.start();
     }
+    resetDone = false;
 }
 
 function stop() {
   setAnimation(false);
   anim.stop();
 }
+
+var resetDone = true;
 
 function reset() {
   for(var i=0;i<appStatus.currentSystem.bodies.length;i++) {
@@ -133,45 +169,28 @@ function reset() {
     refreshBodyData(appStatus.currentSystem.bodies[i]);
   }
   stage.draw();
+  resetDone = true;
 }
   
-function cancelBodyEdit() {
-  appStatus.inAddNew = false;
-  appStatus.inEdit = false;
-
-  var modal = document.getElementById("bodyattributes");
-  modal.style.display = "none";
-
-  document.getElementById("inRadius").value="10";
-  document.getElementById("inAx").value="0";
-  document.getElementById("inAy").value="0";
-  document.getElementById("inDx").value="0";
-  document.getElementById("inDy").value="0";
-  document.getElementById("inDensity").value="1";
-  document.getElementById("inColor").value="#FFFFFF";
-  setCheckBox("inMotionless", false);
-
-  enableElem("inColor",true);
-  enableElem("inAx",true);
-  enableElem("inAy",true);
-  enableElem("inDx",true);
-  enableElem("inDy",true);
-
-  
-}
-
 function confirmBodyEdit() {
 
-  var radius = Number(document.getElementById("inRadius").value);
-  var ax = Number(document.getElementById("inAx").value);
-  var ay = Number(document.getElementById("inAy").value);
-  var dx = Number(document.getElementById("inDx").value);
-  var dy = Number(document.getElementById("inDy").value);
-  var density = Number(document.getElementById("inDensity").value);
-  var color = document.getElementById("inColor").value;
+  var radius = Number($("#inRadius").val());
+  var density = Number($("#inDensity").val());
+  var color = $("#inColor").val();
   var motionless = document.getElementById("inMotionless").checked==true;
 
+  var ax = 0;
+  var ay = 0;
+  var dx = 0;
+  var dy = 0;
+
+
   if(appStatus.inAddNew) {
+
+    ax = Number($("#inAxIni").val());
+    ay = Number($("#inAyIni").val());
+    dx = Number($("#inDxIni").val());
+    dy = Number($("#inDyIni").val());
     var attr = {index: appStatus.currentSystem.bodies.length
       ,x: centerX ,y: centerY
       ,dx: dx, dy: dy
@@ -188,19 +207,66 @@ function confirmBodyEdit() {
   }
 
   if(appStatus.inEdit) {
-    var attr = {
-      density: density
-      ,radius: radius
-      ,motionless: motionless
-    };
+
+    var attr = null;
+
+    if(resetDone) {
+
+      ax = Number($("#inAxIni").val());
+      ay = Number($("#inAyIni").val());
+      dx = Number($("#inDxIni").val());
+      dy = Number($("#inDyIni").val());
+
+      attr = {
+        density: density, radius: radius, motionless: motionless
+        , _ax: ax, _ay: ay, _dx: dx, _dy: dy
+      };
+    } else {
+
+      ax = Number($("#inAx").val());
+      ay = Number($("#inAy").val());
+      dx = Number($("#inDx").val());
+      dy = Number($("#inDy").val());
+
+      attr = {
+        density: density, radius: radius, motionless: motionless
+        , ax: ax, ay: ay, dx: dx, dy: dy
+      };
+  
+    }
+
     var body = editBody(attr);
     if(body!=null)
       refreshBodyData(body);
   }
-
   cancelBodyEdit();
-
   stage.draw();
+  
+}
+
+function cancelBodyEdit() {
+  appStatus.inAddNew = false;
+  appStatus.inEdit = false;
+
+  var modal = document.getElementById("bodyattributes");
+  modal.style.display = "none";
+
+  document.getElementById("inRadius").value="10";
+  document.getElementById("inAx").value="0";
+  document.getElementById("inAy").value="0";
+  document.getElementById("inDx").value="0";
+  document.getElementById("inDy").value="0";
+  document.getElementById("inDensity").value="1";
+  document.getElementById("inColor").value="#FFFFFF";
+  //setCheckBox("inMotionless", false);
+  $("inMotionless").prop("checked", false);
+
+  enableElem("inColor",true);
+  enableElem("inAx",true);
+  enableElem("inAy",true);
+  enableElem("inDx",true);
+  enableElem("inDy",true);
+
   
 }
 
@@ -254,8 +320,7 @@ function addNewBodyToCanvas(body) {
   
 
 
-  grpbody1.on("dragend", function()
-  {
+  grpbody1.on("dragend", function() {
     var graphbody = arguments[0].target;
     var x = graphbody.x();
     var y = graphbody.y();
@@ -307,40 +372,58 @@ function addToBodyList(body, postion) {
   row.className = 'bodyrow';
 
   // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
+  /*
   var cell1 = row.insertCell(0); 
   var cell2 = row.insertCell(1);
   var cell3 = row.insertCell(2);
   var cell4 = row.insertCell(3);
   var cell5 = row.insertCell(4); //cell5.style = "width: 10%";
+  */
 
   // Add some text to the new cells:
-  cell1.innerHTML = `<span style="color: ${color};">${body.motionless?'<B>':''}${postion}${body.motionless?'</B>':''}</span>`;
-  cell2.innerHTML = `(<span id="x${postion}">${body._x}</span>,<span id="y${postion}">${body._y}</span>)`;
-  cell3.innerHTML = `(<span id="sx${postion}">${body._dx}</span>,<span id="sy${postion}">${body._dy}</span>)`;
-  cell4.innerHTML = `(<span id="ax${postion}">${body._ax}</span>,<span id="ay${postion}">${body._ay}</span>)`;
-  cell5.innerHTML = `<button id="removeBtn${postion}" class="body-list-button"><i class="fa fa-trash"></button>`;
-  cell5.innerHTML += `&nbsp;<button id="changeBtn${postion}" class="body-list-button"><i class="fa fa-pencil-square" aria-hidden="true"></i></button>`;
+  
+  /*
+  var templateHtml = `<td><span style="color: {{color}};" class="{{className}}">{{postion}}</span>`;
+  templateHtml += `<td>(<span id="x{{postion}}">{{x}}</span>,<span id="y{{postion}}">{{y}}</span>)`;
+  templateHtml += `<td>(<span id="sx{{postion}}">{{dx}}</span>,<span id="sy{{postion}}">{{dy}}</span>)`;
+  templateHtml += `<td>(<span id="ax{{postion}}">{{ax}}</span>,<span id="ay{{postion}}">{{ay}}</span>)`;
+  templateHtml += `<td><button id="removeBtn{{postion}}" class="body-list-button"><i class="fa fa-trash"></button>`;
+  templateHtml += `<td><button id="changeBtn{{postion}}" class="body-list-button"><i class="fa fa-pencil-square" aria-hidden="true"></i></button>`;
+  */
+  
 
-
-  document.getElementById(`removeBtn${postion}`).onclick=function() { remove(postion, body.id) };
-  document.getElementById(`changeBtn${postion}`).onclick=function() { change(postion, body.id) };
+  var params = {
+    color: body.color,
+    postion: postion,
+    className: 'bodyNameInList' + (body.motionless?'Motionless':''),
+    x: body._x, y: body._y,
+    ax: body._ax, ay: body._ay,
+    dx: body._dx, dy: body._dy
+  };
+  
+  //console.log(template(params));
+  row.innerHTML = bodyrow_template(params);
+/*
+  row.appendChild($(`<td><span style="color: ${color};" class="bodyNameList${body.motionless?'Motionless':''}">${postion}</span></td>`)[0]);
+  row.appendChild($(`<td>(<span id="x${postion}">${body._x}</span>,<span id="y${postion}">${body._y}</span>)</td>`)[0]);
+  row.appendChild($(`<td>(<span id="sx${postion}">${body._dx}</span>,<span id="sy${postion}">${body._dy}</span>)</td>`)[0]);
+  row.appendChild($(`<td>(<span id="ax${postion}">${body._ax}</span>,<span id="ay${postion}">${body._ay}</span>)</td>`)[0]);
+  row.appendChild($(`<td><button id="removeBtn${postion}" class="body-list-button"><i class="fa fa-trash"></button></td>`)[0]);
+  row.appendChild($(`<td><button id="changeBtn${postion}" class="body-list-button"><i class="fa fa-pencil-square" aria-hidden="true"></i></button></td>`)[0]);
+*/
+  $(`#removeBtn${postion}`).on("click", function() {remove(postion, body.id)});
+  $(`#changeBtn${postion}`).on("click", function() {change(postion, body.id)});
 
 }
-
 
 function clearBodyList() {
   var rows = document.getElementsByClassName('bodyrow');
   var rowIds = [];
-  for(var i=0;i<rows.length;i++)
-  {
+  for(var i=0;i<rows.length;i++) {
     rowIds.push(rows[i].rowIndex);
   }
-
-  rowIds.forEach((i)=>document.getElementById("tbbodies").deleteRow(0));
+  rowIds.forEach((i)=>document.getElementById('tbbodies').deleteRow(0));
 }
-
-
-
 
 function change(position, id) {
   var idx = -1;
@@ -361,14 +444,17 @@ function change(position, id) {
   var gphbody = appStatus.currentSystem.gbodies[idx].body;
 
 
-  var modalHeaderCaption = document.getElementById('modalHeaderCaption');
-  modalHeaderCaption.innerText = "Edit Body";
+  $('#modalHeaderCaption').text("Edit Body");
 
-  var modal = document.getElementById("bodyattributes");
-  modal.style.display = "block";
-  appStatus.inEdit = true;
-  enableElem("startBtn",false);
-  enableElem("stopBtn", false);
+
+  if(resetDone) {
+    showInitBodyAttr(true);
+    showBodyAttr(false);
+
+  } else  {
+    showInitBodyAttr(false);
+    showBodyAttr(true);
+  }
 
 
   document.getElementById("inRadius").value = attr.radius;
@@ -376,15 +462,32 @@ function change(position, id) {
   document.getElementById("inAy").value  = attr.ay;
   document.getElementById("inDx").value = attr.dx;
   document.getElementById("inDy").value = attr.dy;
+
+  document.getElementById("inAxIni").value = attr._ax;
+  document.getElementById("inAyIni").value  = attr._ay;
+  document.getElementById("inDxIni").value = attr._dx;
+  document.getElementById("inDyIni").value = attr._dy;
+
+
   document.getElementById("inDensity").value = attr.density;
   document.getElementById("inColor").value = gphbody.fill();
-  utilModule.setCheckBox("inMotionless",attr.motionless);
+  //utilModule.setCheckBox("inMotionless",attr.motionless);
+  $('#nMotionless').prop("inMotionless", attr.motionless)
 
   enableElem("inColor", false);
+  /*
   enableElem("inAx", false);
   enableElem("inAy", false);
   enableElem("inDx", false);
   enableElem("inDy", false);
+  */
+
+ var modal = document.getElementById("bodyattributes");
+ modal.style.display = "block";
+ appStatus.inEdit = true;
+ enableElem("startBtn",false);
+ enableElem("stopBtn", false);
+
 
 
 }
@@ -432,26 +535,48 @@ function remove(position, id) {
   }
 }
 
+function showInitBodyAttr(show)
+{
+  if(show)
+    $('.init-body-attr').removeClass('hide').addClass('show');
+  else
+    $('.init-body-attr').removeClass('show').addClass('hide');
+}
+
+function showBodyAttr(show)
+{
+  if(show)
+    $('.body-attr').removeClass('hide').addClass('show');
+  else
+    $('.body-attr').removeClass('show').addClass('hide');
+}
+
+
 function addNew() {
 
   function callback() {
     if(appStatus.currentSystem==null)
       return;
 
-    var modalHeaderCaption = document.getElementById('modalHeaderCaption');
-    modalHeaderCaption.innerText = "New Body";
+    $('#modalHeaderCaption').text("New Body");
 
-    var modal = document.getElementById("bodyattributes");
-    modal.style.display = "block";
-    appStatus.inAddNew = true;
+    showInitBodyAttr(true);
+    showBodyAttr(false);
+
+
     enableElem("startBtn",false);
     enableElem("stopBtn", false);
 
     enableElem("inColor", true);
-    enableElem("inAx", true);
-    enableElem("inAy", true);
-    enableElem("inDx", true);
-    enableElem("inDy", true);
+    enableElem("inAxIni", true);
+    enableElem("inAyIni", true);
+    enableElem("inDxIni", true);
+    enableElem("inDyIni", true);
+
+    var modal = document.getElementById("bodyattributes");
+    modal.style.display = "block";
+    appStatus.inAddNew = true;
+
   }
 
   if(Object.keys(systems).length==0)
@@ -492,6 +617,11 @@ function refresh(grpbody,body) {
 }
 
 function load() {
+  var initSystems = JSON.parse(localStorage.getItem(interactionModule.interactionName +'/systems'));
+  doLoad(initSystems);
+}
+
+function doLoad(initSystems) {
   clearBodyList();
 
   var added = false;
@@ -501,7 +631,7 @@ function load() {
     select.remove(0);
   }
 
-  var initSystems = JSON.parse(localStorage.getItem('systems'));
+ 
   
   if(demoMode)
     initSystems = demoSystems;
@@ -518,7 +648,7 @@ function load() {
     for(var sysname in initSystems) {
       var initSystem = initSystems[sysname];
 
-      systems[sysname] = new System(sysname, appStatus.configuration);
+      systems[sysname] = new System(sysname, appStatus.configuration, appStatus.moduleConfig);
       systems[sysname].bodiesAttr = initSystem.bodiesAttr;
       systems[sysname].config =  initSystem.config;
     }
@@ -534,21 +664,15 @@ function save() {
   var saveSystems = {};
 
   for(var sysname in systems) {
-
-    var attr = systems[sysname].getAttributes();
-
-    saveSystems[sysname] = { 
-      config: systems[sysname].config,
-      bodiesAttr: attr
-    };
+    saveSystems[sysname] = systems[sysname].toJSON();
   }
-  localStorage.setItem("systems", JSON.stringify(saveSystems));
+  localStorage.setItem( interactionModule.interactionName + "/systems", JSON.stringify(saveSystems));
 }
 
 
 function newSystem(callback)
 {
-  var sysname = 'System' + Object.keys(systems).length;
+  var sysname = 'System' + String(Object.keys(systems).length+1);
 
   smalltalk
   .prompt('Question', 'Enter new System name', sysname)
@@ -560,7 +684,7 @@ function newSystem(callback)
         option.text = sysname;
         option.selected = true;
         systemNameSel.add(option);
-        var newSystem = new System(sysname, appStatus.configuration);
+        var newSystem = new System(sysname, appStatus.configuration, appStatus.moduleConfig) ; 
         systems[sysname] = newSystem;
         changeSystem();
         if(typeof callback=="function")
@@ -608,8 +732,7 @@ function changeSystem()
 
 }
 
-function removeSystem()
-{
+function removeSystem() {
   if(appStatus.currentSystem==null)
     return;
 
@@ -632,17 +755,52 @@ function removeSystem()
   }
   
 }
+
+function downloadSys() {
+  if(appStatus.currentSystem==null)
+    return;
+
+  var sysData = {};
+  sysData[appStatus.currentSystem.name]  = appStatus.currentSystem.toJSON();
+  
+  download(JSON.stringify(sysData)
+  , appStatus.currentSystem.name + '.json'
+  , 'text/json');
+  
+}
+
+function useFileContents(contents) {
+  doLoad(JSON.parse(contents));
+}
+
+function readSingleFile(e) {
+  var file = e.target.files[0];
+  if (!file) {
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var contents = e.target.result;
+    useFileContents(contents);
+  };
+  reader.readAsText(file);
+  document.getElementById('file-input').style="display:none";
+}
+
+
+function uploadSys() {
+  document.getElementById('file-input').style="display:block";
+
+}
   
 function init() {
-
+  var span = null;
   var newConf = localStorage.getItem("config");
   if(newConf) 
     appStatus.configuration = new configModule.Configuration(JSON.parse(newConf));
 
   document.getElementById("footerVersion").innerText = "Version " + version;
 
-  var span = null;
-  
   span = document.getElementById("closeConfig");
   span.onclick = function() {configModule.hideConfig(appStatus);};
 
@@ -675,21 +833,47 @@ function init() {
   span = document.getElementById("closeBodyAttributes");
   span.onclick = cancelBodyEdit;
 
-  document.getElementById('addNewBtn').onclick = addNew;
-  document.getElementById('resetBtn').onclick =  reset;
-  document.getElementById('loadBtn').onclick =  load;
-  document.getElementById('saveBtn').onclick =  save;
-  document.getElementById('startBtn').onclick =  start;
-  document.getElementById('stopBtn').onclick =  stop;
+  $('#addNewBtn').on("click", addNew);
+  $('#resetBtn').on("click", reset);
+  $('#loadBtn').on("click", load);
+  $('#saveBtn').on("click", save);
+  $('#startBtn').on("click", start);
+  $('#stopBtn').on("click", stop);
 
-  document.getElementById('newSystemBtn').onclick=newSystem;
-  document.getElementById('removeSystemBtn').onclick=removeSystem;
+  $('#newSystemBtn').on("click", newSystem);
+  $('#removeSystemBtn').on("click", removeSystem);
 
   document.getElementById('systemName').onchange=changeSystem;
 
-  document.getElementById('confirmBodyEditBtn').onclick=confirmBodyEdit;
-  document.getElementById('cancelBodyEditBtn').onclick=cancelBodyEdit;
+  $('#confirmBodyEditBtn').on("click", confirmBodyEdit);
+  $('#cancelBodyEditBtn').on("click", cancelBodyEdit);
 
+  $('#downloadSysBtn').on("click", downloadSys);
+  $('#uploadSysBtn').on("click", uploadSys);
+
+
+  if(extraConfigurationUI!=null && extraConfigurationUI.length>0) {
+    var confTableBody = document.getElementById("configTableBody");
+    extraConfigurationUI.forEach((rowHtml) => {
+      var row = confTableBody.insertRow(confTableBody.length);
+      row.innerHTML = rowHtml; 
+    });
+  }
+
+  if(extraSysConfUI!=null && extraSysConfUI.length>0) {
+    var confTableBody = document.getElementById("configSysTableBody");
+    extraSysConfUI.forEach((rowHtml) => {
+      var row = confTableBody.insertRow(confTableBody.length);
+      row.innerHTML = rowHtml; 
+    });
+  }
+
+  $('#interactionName').text(interactionModule.interactionTitle);
+
+  document.getElementById('file-input')
+  .addEventListener('change', readSingleFile, false);
+
+  // TODO: use attribute data-tippy-content="Open Config Dialog" instead
   tippy('#showConfigBtn', {
     content: 'Open Config Dialog',
   });
@@ -727,6 +911,13 @@ function init() {
   tippy('#showSysConfigBtn', {
     content: 'Show System config',
   });
+
+  tippy('#downloadSysBtn', {
+    content: 'Export system data',
+  });
+  tippy('#uploadSysBtn', {
+    content: 'Import system data',
+  });
   
   if(demoMode) {
     load();
@@ -742,6 +933,25 @@ function updateAllSystems() {
       elem.spd.visible(appStatus.configuration.speedVisible);
     }
   );
+}
+
+
+function download(data, filename, type) {
+  var file = new Blob([data], {type: type});
+  if (window.navigator.msSaveOrOpenBlob) // IE10+
+      window.navigator.msSaveOrOpenBlob(file, filename);
+  else { // Others
+      var a = document.createElement("a"),
+              url = URL.createObjectURL(file);
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);  
+      }, 0); 
+  }
 }
 
 
@@ -763,11 +973,11 @@ function animationFunction(frame) {
     for(var i=0;i<bodies.length;i++)
       bodies[i].prepareForInteract();
 
-      physModule.interaction(bodies, appStatus.configuration, gravInteract);
+    physModule.interaction(bodies, appStatus.configuration, appStatus.currentSystem.config, interact);
 
     for(var b=0;b<bodies.length;b++)
     {
-      bodies[b].move();
+      bodies[b].move(world);
       refresh(gbodies[b],bodies[b]);
     }
   }

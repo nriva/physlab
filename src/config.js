@@ -4,7 +4,7 @@ function Configuration(attr) {
 
   this.setDefault = function() {
     this.elastCoeff = 1;
-    this.G = 0.01;
+    //this.G = 0.01;
     this.displayFactorSpeed = 50;
     this.displayFactorAccel = 1000;
     this.speedVisible = true;
@@ -18,7 +18,7 @@ function Configuration(attr) {
     this.setDefault();
   else {
     this.elastCoeff = attr.elastCoeff;
-    this.G = attr.G;
+    //this.G = attr.G;
     this.displayFactorSpeed = attr.displayFactorSpeed;
     this.displayFactorAccel = attr.displayFactorAccel;
     this.speedVisible = attr.speedVisible;
@@ -50,7 +50,7 @@ function showConfig(appStatus) {
 
 function refreshConfig(appStatus) {
   document.getElementById('defElastCoeff').value = appStatus.configuration.elastCoeff;
-  document.getElementById('defConstG').value = appStatus.configuration.G;
+
 
   utilModule.setCheckBox('accVis', appStatus.configuration.accelVisible);
   document.getElementById('accMagn').value = appStatus.configuration.displayFactorAccel;
@@ -61,17 +61,22 @@ function refreshConfig(appStatus) {
   document.getElementById('spdColor').value = appStatus.configuration.spdColor;
 
   utilModule.setCheckBox('shadowsVis', appStatus.configuration.shadow);
+
+  //document.getElementById('defConstG').value = appStatus.configuration.G;  
+
+  if(appStatus.moduleConfig!=null) {
+    appStatus.moduleConfig.forEach(
+      (elem) => {
+        document.getElementById(elem.elemDefId).value = appStatus.configuration[elem.propDefName];  
+      });
+  }
+
 }
 
 function closeConfig(appStatus) {
   var n = Number(document.getElementById('defElastCoeff').value);
   if(!isNaN(n)) {
     appStatus.configuration.elastCoeff = n;
-  }
-
-  n = Number(document.getElementById('defConstG').value);
-  if(!isNaN(n)) {
-    appStatus.configuration.G = n;
   }
 
   appStatus.configuration.accelVisible = document.getElementById('accVis').checked;
@@ -90,8 +95,26 @@ function closeConfig(appStatus) {
 
   appStatus.configuration.accColor = document.getElementById('accColor').value;
   appStatus.configuration.spdColor = document.getElementById('spdColor').value;
-
   appStatus.configuration.shadow = document.getElementById('shadowsVis').checked;
+
+  /*
+  n = Number(document.getElementById('defConstG').value);
+  if(!isNaN(n)) {
+    appStatus.configuration.G = n;
+  }
+  */
+
+  if(appStatus.moduleConfig!=null) {
+    appStatus.moduleConfig.forEach(
+      (elem) => {
+        var v = document.getElementById(elem.elemDefId).value;
+        if(typeof appStatus.configuration[elem.propDefName] === "number")
+          v = Number(v);
+        appStatus.configuration[elem.propDefName] = v;  
+      });
+  }  
+
+
 
   localStorage.setItem("config", JSON.stringify(appStatus.configuration));
   hideConfig(appStatus);
@@ -132,7 +155,11 @@ function showSysConfig(appStatus) {
 
 function refreshSysConfig(appStatus) {
   document.getElementById('elastCoeff').value = appStatus.currentSystem.config.elastCoeff;
-  document.getElementById('constG').value = appStatus.currentSystem.config.G;
+  //document.getElementById('constG').value = appStatus.currentSystem.config.G;
+
+  appStatus.moduleConfig.forEach((elem)=>{
+    document.getElementById(elem.elemId).value = appStatus.currentSystem.config[elem.propName];
+  });
 }
 
 function closeSysConfig(appStatus) {
@@ -141,9 +168,19 @@ function closeSysConfig(appStatus) {
     appStatus.currentSystem.config.elastCoeff = n;
   }
 
-  n = Number(document.getElementById('constG').value);
+  /*n = Number(document.getElementById('constG').value);
   if(!isNaN(n)) {
     appStatus.currentSystem.config.G = n;
+  }*/
+
+  if(appStatus.moduleConfig!=null) {
+    appStatus.moduleConfig.forEach(
+      (elem) => {
+        var v = document.getElementById(elem.elemId).value;
+        if(typeof appStatus.configuration[elem.propName] === "number")
+          v = Number(v);
+        appStatus.currentSystem.config[elem.propName] = v;  
+      });
   }
   hideSysConfig(appStatus);
 }

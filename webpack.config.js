@@ -13,6 +13,19 @@ module.exports = {
     compress: true,
     port: 8080
   },
+  resolve: {fallback: {
+    "assert": false,
+    "fs": false,
+    "tls": false,
+    "net": false,
+    "path": false,
+    "zlib": false,
+    "http": false,
+    "https": false,
+    "stream": false,
+    "crypto": false,
+    "crypto-browserify": false}
+  },
   module: {
     rules: [
       {
