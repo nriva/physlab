@@ -25,7 +25,7 @@
   "devDependencies": {
     "css-loader": "^5.0.1",
     "electron": "11.1.0",
-    "express": "^4.17.1",
+    "express": "^4.18.2",
     "file-loader": "^6.2.0",
     "style-loader": "^2.0.0",
     "webpack": "^5.11.1",
