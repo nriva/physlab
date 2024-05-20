@@ -24,7 +24,7 @@ function interaction(bodies,config,sysConfig,interact) {
     for(var i1=0;i1<bodies.length;i1++)
         for(var i2=0;i2<bodies.length;i2++)
             if(i1>i2)
-                interact(bodies[i1], bodies[i2], config, sysConfig);
+                interact(bodies[i1], bodies[i2], sysConfig);
 }
 
 module.exports = {collisionManagement, interaction};

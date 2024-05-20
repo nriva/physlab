@@ -1,4 +1,12 @@
-function interactFunction(o1,o2,config,systemConfig) {
+const configModule = require('../config.js');
+
+const interactionTitle = "Attractive Force Interaction";
+const interactionName = "attraction";
+const interactionVersion = "1";
+
+const interactionExtraConfigurationLabel = "Attraction Extra Configuration";
+
+function interactFunction(o1, o2, config) {
 
     var x = o1.x-o2.x;
     var y = o1.y-o2.y;
@@ -6,7 +14,7 @@ function interactFunction(o1,o2,config,systemConfig) {
     // Angolo del vettore f
     var alpha = Math.atan(Math.abs(y/x));
 
-    var f = systemConfig.G / Math.sqrt(x*x + y*y);
+    var f = config.systemProperties.G / Math.sqrt(x*x + y*y);
 
     // componenti di f lungo gli assi
     var fx1 = f * Math.cos(alpha) * o2.getMass();
@@ -22,24 +30,22 @@ function interactFunction(o1,o2,config,systemConfig) {
     if(y<0) fy2= - fy2; o2.ay += fy2;
 };
 
-const interactionTitle = "Attractive Force Interaction";
-const interactionName = "attraction";
-const interactionVersion = "1";
 
-const extraConfigurationRows = [
-    '<td><label>Attraction Configuration:</label></td>',
-    '<td><label>Default G constant:</label></td><td><input type=text id=defConstG maxlength="4" style="width: 2em"></td>'
-];
 
-const extraSystemConfRows = [
-    '<td><label>G const:</label></td><td><input type=text id=constG maxlength="4" style="width: 2em"></td>'
-];
+// const extraConfigurationRows = [
+//     '<td><label>Attraction Configuration:</label></td>',
+//     '<td><label>Default G constant:</label></td><td><input type=text id=defConstG maxlength="4" style="width: 2em"></td>'
+// ];
+
+// const extraSystemConfRows = [
+//     '<td><label>G const:</label></td><td><input type=text id=constG maxlength="4" style="width: 2em"></td>'
+// ];
 
 
 function buildDemoSystems(centerX, centerY) {
     return {
-    "name1": {
-    config: {G: 0.01,elastCoeff:1},
+    "System1": {
+    config: {G: 0.01},
     bodiesAttr: [
         {"id":"B0000","x":centerX,"y":centerY,"ax":0,"ay":0,"dx":0,"dy":0,"density":1,"index":0,"radius":20,"motionless":false,"color":"yellow"}
         ,{"id":"B0001","x":centerX,"y":centerY/4,"ax":0,"ay":0,"dx":2,"dy":0,"density":1,"index":1,"radius":10,"motionless":false,"color":"lightblue"}
@@ -47,8 +53,8 @@ function buildDemoSystems(centerX, centerY) {
     bodies : [],
     gbodies : []
     },
-    "name2" : {
-        config: {G: 0.01,elastCoeff:1},
+    "System2" : {
+        config: {G: 0.01},
         bodiesAttr: [
         {"id":"B0000","x":centerX,"y":centerY,"ax":0,"ay":0,"dx":0,"dy":0,"density":1,"index":0,"radius":20,"motionless":false,"color":"pink"}
         ,{"id":"B0001","x":centerX,"y":centerY/4,"ax":0,"ay":0,"dx":2,"dy":0,"density":1,"index":1,"radius":10,"motionless":false,"color":"blue"}],
@@ -58,15 +64,23 @@ function buildDemoSystems(centerX, centerY) {
     };
 }
 
-var moduleConfig = [{elemDefId:'defConstG', propDefName: 'defG', defValue: 0.01, elemId: 'constG', propName: 'G'}];
+var moduleConfigDefinition = [
+    new configModule.SystemProperty(
+    { 
+    propName: 'G'
+    , defValue: 0.01
+    , labelForDefaultValue: "Default G Constant"
+    , labelForSystemValue: "G Constant"
+    , maxlength: 4
+    })
+];
 
 module.exports = {
-    interactFunction
-    , extraConfigurationRows
-    , extraSystemConfRows
-    , interactionName
+    interactionName
     , interactionVersion
     , interactionTitle
-    , moduleConfig
+    , interactionExtraConfigurationLabel
+    , moduleConfigDefinition
+    , interactFunction
     , buildDemoSystems
 };

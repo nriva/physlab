@@ -97,11 +97,11 @@ function Body(attributes, world, config)  {
 
     // Bounce
     if(this.x + this.dx > this.world.width - this.radius || this.x + this.dx < this.radius) {
-        this.dx = - this.config.elastCoeff * this.dx;
+        this.dx = - this.config.systemProperties.elastCoeff * this.dx;
     }
 
     if(this.y + this.dy > this.world.height - this.radius || this.y + this.dy < this.radius) {
-        this.dy = - this.config.elastCoeff * this.dy;
+        this.dy = - this.config.systemProperties.elastCoeff * this.dy;
     }
 
     // Movement
@@ -195,21 +195,15 @@ function Body(attributes, world, config)  {
 
 }
 
-function System(name, config, moduleConfig) {
+function System(name, config) {
 
   this.name = name;
   this.bodies = [];
   this.gbodies = [];
 
-  this.config = {elastCoeff: config.elastCoeff};
-  this.defaultConfig = {elastCoeff: config.elastCoeff};
   this.bodiesAttr = [];
 
-  moduleConfig.forEach((elem) =>
-  {
-    this.config[elem.propName] = config[elem.propDefName];
-    this.defaultConfig[elem.propName] = config[elem.propDefName];
-  });
+  this.config = config;
 
   this.clearAllBodies = function()
   {

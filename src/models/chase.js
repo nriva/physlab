@@ -1,3 +1,7 @@
+const interactionTitle = "PID Control simulation";
+const interactionName = "pidctrl";
+const interactionVersion = "1";
+
 var prevErr= NaN;
 var sumErr= 0;
 
@@ -6,7 +10,6 @@ var TAU=100;
 var tau = Number.NEGATIVE_INFINITY;
 
 function interactFunction(o1,o2,config,systemConfig) {
-
 
     var hunter = null;
     var prey = null;
@@ -19,7 +22,6 @@ function interactFunction(o1,o2,config,systemConfig) {
         prey = o1;
 
     }
-
 
     if(Number.isFinite(tau)) {
         tau++;
@@ -79,11 +81,7 @@ function interactFunction(o1,o2,config,systemConfig) {
     sumErr += e;
 };
 
-const interactionTitle = "PID Control simulation";
 
-const interactionVersion = "1";
-
-const interactionName = "pidctrl";
 
 const extraConfigurationRows = [];
 

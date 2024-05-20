@@ -17,6 +17,8 @@ const interactionModuleGrav = require('./models/grav'); // require('./grav');
 
 const version = "0.4.0-alpha";
 
+const BODYROW_CLASSNAME = 'bodyrow';
+
 // Aliases
 var Body = bodyModule.Body;
 var System = bodyModule.System;
@@ -55,8 +57,7 @@ if(window.location.search) {
 
 // Aliases
 const interactFunction = interactionModule.interactFunction;
-const extraConfigurationUI = interactionModule.extraConfigurationRows;
-const extraSysConfUI = interactionModule.extraSystemConfRows;
+const moduleConfigDefinition = interactionModule.moduleConfigDefinition;
 
 /** A named collection of System() instances */
 var systems = {};
@@ -113,15 +114,18 @@ var appStatus = {
   inEdit: false,
   inConfig: false,
   currentSystem: null,
-  configuration: new configModule.Configuration(),
-  moduleConfig : [],
+  currentConfiguration: null,
+  interactionName: "",
+  modulePropertyDefinitions : [],
   isEditing : function() { return this.inAddNew || this.inEdit; }
 }
 
-appStatus.moduleConfig = interactionModule.moduleConfig;
-appStatus.moduleConfig.forEach((elem)=>{
-  appStatus.configuration[elem.propDefName] = elem.defValue; 
-});
+appStatus.modulePropertyDefinitions = interactionModule.moduleConfigDefinition;
+
+appStatus.currentConfiguration = new configModule.Configuration(null, appStatus.modulePropertyDefinitions);
+
+appStatus.interactionName = interactionModule.interactionName;
+
 
 var bodyrow_templateHtml = $("#bodyrow-template").html();
 var bodyrow_template = Handlebars.compile(bodyrow_templateHtml);
@@ -251,18 +255,24 @@ function cancelBodyEdit() {
   appStatus.inAddNew = false;
   appStatus.inEdit = false;
 
-  var modal = document.getElementById("bodyattributes");
-  modal.style.display = "none";
+//  var modal = document.getElementById("bodyattributes");
+//  modal.style.display = "none";
+  $("#bodyattributes").hide();
 
-  document.getElementById("inRadius").value="10";
-  document.getElementById("inAx").value="0";
-  document.getElementById("inAy").value="0";
-  document.getElementById("inDx").value="0";
-  document.getElementById("inDy").value="0";
-  document.getElementById("inDensity").value="1";
-  document.getElementById("inColor").value="#FFFFFF";
+  $("#inRadius").val("10");
+  $("#inAx").val("0");
+  $("#inAy").val("0");
+  $("#inAxIni").val("0");
+  $("#inAy").val("0");
+  $("#inAyIni").val("0");
+  $("#inDx").val("0");
+  $("#inDxIni").val("0");
+  $("#inDy").val("0");
+  $("#inDyIni").val("0");
+  $("#inDensity").val("1");
+  $("#inColor").val("#FFFFFF");
   //setCheckBox("inMotionless", false);
-  $("inMotionless").prop("checked", false);
+  $("#inMotionless").prop("checked", false);
 
   enableElem("inColor",true);
   enableElem("inAx",true);
@@ -270,11 +280,10 @@ function cancelBodyEdit() {
   enableElem("inDx",true);
   enableElem("inDy",true);
 
-  
 }
 
 function createNewBody(attributes) {
-  var body1 = new Body(attributes, world, appStatus.configuration);
+  var body1 = new Body(attributes, world, appStatus.currentConfiguration);
   appStatus.currentSystem.bodies.push(body1);
   return body1;
 }
@@ -291,7 +300,7 @@ function addNewBodyToCanvas(body) {
   });
 
 
-  if(appStatus.configuration.shadow) {
+  if(appStatus.currentConfiguration.shadow) {
     grpbody1.shadowEnabled(true);
     grpbody1.shadowColor('black');
     grpbody1.shadowOffset({x: 2, y: 2});
@@ -303,21 +312,21 @@ function addNewBodyToCanvas(body) {
   var acc1 = null;
   acc1 = new Konva.Line({
     points: [0,0,0,0],
-    stroke: appStatus.configuration.accColor,
+    stroke: appStatus.currentConfiguration.accColor,
     draggable: false
   });
   layer.add(acc1);
-  acc1.visible(appStatus.configuration.accelVisible);
+  acc1.visible(appStatus.currentConfiguration.accelVisible);
     
 
   var spd1 = null;
   spd1 = new Konva.Line({
     points: [0,0,0,0],
-    stroke: appStatus.configuration.spdColor,
+    stroke: appStatus.currentConfiguration.spdColor,
     draggable: false
   });
   layer.add(spd1);
-  spd1.visible(appStatus.configuration.speedVisible);
+  spd1.visible(appStatus.currentConfiguration.speedVisible);
 
   appStatus.currentSystem.gbodies.push({body:grpbody1,acc:acc1,spd:spd1});
   
@@ -363,6 +372,7 @@ function refreshButtons() {
   enableElem("saveBtn", appStatus.currentSystem.bodies.length>0);
 }
 
+
 function addToBodyList(body, postion) {
   //'<tr><td><span style="color: brown;">ID</span></td> <td>position</td> <td><button onclick="remove(1)">Remove</button></td></tr>';
   var color = body.color;
@@ -372,7 +382,7 @@ function addToBodyList(body, postion) {
   // Create an empty <tr> element and add it to the 1st position of the table:
   var row = table.insertRow(table.length);
   row.id = 'row' + postion;
-  row.className = 'bodyrow';
+  row.className = BODYROW_CLASSNAME;
 
   // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
   /*
@@ -420,7 +430,7 @@ function addToBodyList(body, postion) {
 }
 
 function clearBodyList() {
-  var rows = document.getElementsByClassName('bodyrow');
+  var rows = document.getElementsByClassName(BODYROW_CLASSNAME);
   var rowIds = [];
   for(var i=0;i<rows.length;i++) {
     rowIds.push(rows[i].rowIndex);
@@ -558,6 +568,7 @@ function showBodyAttr(show)
 function addNew() {
 
   function callback() {
+
     if(appStatus.currentSystem==null)
       return;
 
@@ -591,19 +602,16 @@ function addNew() {
 
 function refreshDisplayedBodyData(body) {
 
-  document.getElementById("x" + body.index).innerText = Math.floor(body.x);
-  document.getElementById("y" + body.index).innerText = Math.floor(body.y);
+  $("#x" + body.index).text(Math.floor(body.x));
+  $("#y" + body.index).text(Math.floor(body.y));
 
-  document.getElementById("sx" + body.index).innerText = Number(body.dx).toFixed(3);
-  document.getElementById("sy" + body.index).innerText = Number(body.dy).toFixed(3);
+  $("#sx" + body.index).text(Number(body.dx).toFixed(3));
+  $("#sy" + body.index).text(Number(body.dy).toFixed(3));
 
-  document.getElementById("ax" + body.index).innerText = Number(body.ax).toFixed(3);
-  document.getElementById("ay" + body.index).innerText = Number(body.ay).toFixed(3);   
+  $("#ax" + body.index).text(Number(body.ax).toFixed(3));
+  $("#ay" + body.index).text(Number(body.ay).toFixed(3));   
 
 }
-
-
-
 
 function loadSystemsFromLocalStorage() {
   var initSystems = JSON.parse(localStorage.getItem(interactionModule.interactionName +'/systems'));
@@ -620,10 +628,9 @@ function doLoad(initSystems) {
     select.remove(0);
   }
 
- 
-  
   if(demoMode)
     initSystems = demoSystems;
+  
   if(initSystems) {  
     var systemNameSel = document.getElementById('systemName');
     
@@ -637,7 +644,7 @@ function doLoad(initSystems) {
     for(var sysname in initSystems) {
       var initSystem = initSystems[sysname];
 
-      systems[sysname] = new System(sysname, appStatus.configuration, appStatus.moduleConfig);
+      systems[sysname] = new System(sysname, appStatus.currentConfiguration);
       systems[sysname].bodiesAttr = initSystem.bodiesAttr;
       systems[sysname].config =  initSystem.config;
     }
@@ -672,7 +679,7 @@ function newSystem(callback) {
         option.text = sysname;
         option.selected = true;
         systemNameSel.add(option);
-        var newSystem = new System(sysname, appStatus.configuration, appStatus.moduleConfig) ; 
+        var newSystem = new System(sysname, appStatus.currentConfiguration, appStatus.modulePropertyDefinitions) ; 
         systems[sysname] = newSystem;
         changeSystem();
         if(typeof callback=="function")
@@ -787,12 +794,30 @@ function readSingleFile(e) {
 function startSystemUpload() {
   document.getElementById('file-input').style="display:block";
 }
+
+function addPropertyElements(propertyGroupLabel, propertyDefinitions) {
+  var confTableBody = document.getElementById("configTableBody");
+  if(propertyDefinitions.length>0) {
+    var row = confTableBody.insertRow(confTableBody.length);
+    row.innerHTML = '<td colspan="2" class="config-section-header"><label>' + propertyGroupLabel +"</label></td>";
+  }
+  propertyDefinitions.forEach((propDef) => {
+    var row = confTableBody.insertRow(confTableBody.length);
+    row.innerHTML = '<td><label>' + propDef.labelForDefaultValue + ':</label></td><td><input type=text id="propCurrentVaule_' + propDef.propName  +'" maxlength="' + propDef.maxlength +  '" style="width: 2em"></td>';
+  });
+
+  var confTableBody = document.getElementById("configSysTableBody");
+  propertyDefinitions.forEach((propDef) => {
+    var row = confTableBody.insertRow(confTableBody.length);
+    row.innerHTML = '<td><label>' + propDef.labelForSystemValue + ':</label></td><td><input type=text id="propSystemVaue_' + propDef.propName  +'" maxlength="' + propDef.maxlength +  '" style="width: 2em"></td>'; 
+  });
+}
   
-function initGraphicElemnts() {
+function initGraphicElements() {
   
-  var newConf = localStorage.getItem("config");
+  var newConf = localStorage.getItem( appStatus.interactionName + "/config");
   if(newConf) 
-    appStatus.configuration = new configModule.Configuration(JSON.parse(newConf));
+    appStatus.currentConfiguration = new configModule.Configuration(JSON.parse(newConf), appStatus.modulePropertyDefinitions);
 
   document.getElementById("footerVersion").innerText = "Version " + version;
 
@@ -846,21 +871,10 @@ function initGraphicElemnts() {
   $('#downloadSysBtn').on("click", downloadCurrentSystem);
   $('#uploadSysBtn').on("click", startSystemUpload);
 
+  addPropertyElements("Physics Configuration", configModule.systemPropertyDefinitions);
 
-  if(extraConfigurationUI!=null && extraConfigurationUI.length>0) {
-    var confTableBody = document.getElementById("configTableBody");
-    extraConfigurationUI.forEach((rowHtml) => {
-      var row = confTableBody.insertRow(confTableBody.length);
-      row.innerHTML = rowHtml; 
-    });
-  }
-
-  if(extraSysConfUI!=null && extraSysConfUI.length>0) {
-    var confTableBody = document.getElementById("configSysTableBody");
-    extraSysConfUI.forEach((rowHtml) => {
-      var row = confTableBody.insertRow(confTableBody.length);
-      row.innerHTML = rowHtml; 
-    });
+  if(moduleConfigDefinition!=null && moduleConfigDefinition.length>0) {
+    addPropertyElements(interactionModule.interactionExtraConfigurationLabel, moduleConfigDefinition);
   }
 
   $('#interactionName').text(interactionModule.interactionTitle);
@@ -927,8 +941,8 @@ function updateCurrentSystemGrpBodies() {
 
   appStatus.currentSystem.gbodies.forEach(
     (elem) => {
-      elem.acc.visible(appStatus.configuration.accelVisible);
-      elem.spd.visible(appStatus.configuration.speedVisible);
+      elem.acc.visible(appStatus.currentConfiguration.accelVisible);
+      elem.spd.visible(appStatus.currentConfiguration.speedVisible);
     }
   );
 }
@@ -968,9 +982,9 @@ function animationFunction(frame) {
   
   
     if(grpbody.spd) 
-      grpbody.spd.points([x,y, x+body.dx * appStatus.configuration.displayFactorSpeed, y+body.dy * appStatus.configuration.displayFactorSpeed]);
+      grpbody.spd.points([x,y, x+body.dx * appStatus.currentConfiguration.displayFactorSpeed, y+body.dy * appStatus.currentConfiguration.displayFactorSpeed]);
     if(grpbody.acc) 
-      grpbody.acc.points([x,y, x+body.ax * appStatus.configuration.displayFactorAccel, y+body.ay * appStatus.configuration.displayFactorAccel]);
+      grpbody.acc.points([x,y, x+body.ax * appStatus.currentConfiguration.displayFactorAccel, y+body.ay * appStatus.currentConfiguration.displayFactorAccel]);
   }
 
   var bodies = appStatus.currentSystem.bodies;
@@ -982,7 +996,7 @@ function animationFunction(frame) {
     for(var i=0;i<bodies.length;i++)
       bodies[i].prepareForInteract();
 
-    physModule.interaction(bodies, appStatus.configuration, appStatus.currentSystem.config, interactFunction);
+    physModule.interaction(bodies, appStatus.currentConfiguration, appStatus.currentSystem.config, interactFunction);
 
     for(var b=0;b<bodies.length;b++)
     {
@@ -994,7 +1008,7 @@ function animationFunction(frame) {
 
 var anim = new Konva.Animation(animationFunction, layer);
 
-initGraphicElemnts();
+initGraphicElements();
 
 
 

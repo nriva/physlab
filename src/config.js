@@ -1,10 +1,37 @@
-var utilModule = require('./util.js');
+const utilModule = require('./util.js');
+const $ = require( "jquery" );
 
-function Configuration(attr) {
+const PROPERTY_ID_PREFIX = {
+  currentValueIdPrefix : "propCurrentVaule_",
+  systemValueIdPrefix : "propSystemVaue_"
+}
 
-  this.setDefault = function() {
-    this.elastCoeff = 1;
-    //this.G = 0.01;
+/** Physical property of a system */
+function SystemProperty(attr) {
+  this.propName = attr.propName;
+  this.defValue = attr.defValue;
+  this.labelForDefaultValue = attr.labelForDefaultValue;
+  this.labelForSystemValue = attr.labelForSystemValue;
+  this.maxlength = attr.maxlength;
+  this.propType = "number";
+}
+
+var systemPropertyDefinitions = [
+  new SystemProperty(
+  { 
+  propName: 'elastCoeff'
+  , defValue: 1
+  , labelForDefaultValue: "Default Walls Elastic Coeff"
+  , labelForSystemValue: "Walls Elastic Coeff"
+  , maxlength: 4
+  })
+];
+
+function Configuration(attr, moduleConfig) {
+
+  this.systemProperties = {};
+
+  this.setDefault = function(moduleConfig) {
     this.displayFactorSpeed = 50;
     this.displayFactorAccel = 1000;
     this.speedVisible = true;
@@ -12,13 +39,22 @@ function Configuration(attr) {
     this.spdColor = "#000000";
     this.accColor = "#EE0000";
     this.shadow = true;
+
+    for(var i=0;i<systemPropertyDefinitions.length;i++) {
+      this.systemProperties[systemPropertyDefinitions[i].propName] = systemPropertyDefinitions[i].defValue;
+    }    
+    if(moduleConfig) {
+      for(var i=0;i<moduleConfig.length;i++) {
+        this.systemProperties[moduleConfig[i].propName] = moduleConfig[i].defValue;
+      }
+    }
   };
 
-  if(typeof attr == "undefined")
-    this.setDefault();
-  else {
-    this.elastCoeff = attr.elastCoeff;
-    //this.G = attr.G;
+
+  if(typeof attr == "undefined" || attr == null) {
+    this.setDefault(moduleConfig);
+  } else {
+    
     this.displayFactorSpeed = attr.displayFactorSpeed;
     this.displayFactorAccel = attr.displayFactorAccel;
     this.speedVisible = attr.speedVisible;
@@ -26,8 +62,22 @@ function Configuration(attr) {
     this.spdColor = attr.spdColor;
     this.accColor = attr.accColor;
     this.shadow = attr.shadow;
+
+
+    const attrSysProps = attr.systemProperties;
+    for(var i=0;i<systemPropertyDefinitions.length;i++) {
+      this.systemProperties[systemPropertyDefinitions[i].propName] =  attrSysProps[systemPropertyDefinitions[i].propName];
+    }       
+
+    if(moduleConfig) {
+      for(var i=0;i<moduleConfig.length;i++) {
+        this.systemProperties[moduleConfig[i].propName] = attrSysProps[moduleConfig[i].propName];
+      }
+    }
   }
 }
+
+
 
 function showConfig(appStatus) {
 
@@ -49,80 +99,70 @@ function showConfig(appStatus) {
 }
 
 function refreshConfig(appStatus) {
-  document.getElementById('defElastCoeff').value = appStatus.configuration.elastCoeff;
+  //$('#defElastCoeff').val(appStatus.configuration.elastCoeff);
+
+  const currentConfiguration = appStatus.currentConfiguration;
+
+  utilModule.setCheckBox('accVis', currentConfiguration.accelVisible);
+  $('#accMagn').val(currentConfiguration.displayFactorAccel);
+  $('#accColor').val(currentConfiguration.accColor);
+
+  utilModule.setCheckBox('spdVis', currentConfiguration.speedVisible);
+  $('#spdMagn').val(currentConfiguration.displayFactorSpeed);
+  $('#spdColor').val(currentConfiguration.spdColor);
+
+  utilModule.setCheckBox('shadowsVis', currentConfiguration.shadow);
+
+  systemPropertyDefinitions.forEach((profDefinition)=>{
+    $('#' + PROPERTY_ID_PREFIX.currentValueIdPrefix + profDefinition.propName).val(currentConfiguration.systemProperties[profDefinition.propName])
+  });
+
+  appStatus.modulePropertyDefinitions.forEach((profDefinition)=>{
+    $('#' + PROPERTY_ID_PREFIX.currentValueIdPrefix + profDefinition.propName).val(currentConfiguration.systemProperties[profDefinition.propName])
+  });  
 
 
-  utilModule.setCheckBox('accVis', appStatus.configuration.accelVisible);
-  document.getElementById('accMagn').value = appStatus.configuration.displayFactorAccel;
-  document.getElementById('accColor').value = appStatus.configuration.accColor;
-
-  utilModule.setCheckBox('spdVis', appStatus.configuration.speedVisible);
-  document.getElementById('spdMagn').value = appStatus.configuration.displayFactorSpeed;
-  document.getElementById('spdColor').value = appStatus.configuration.spdColor;
-
-  utilModule.setCheckBox('shadowsVis', appStatus.configuration.shadow);
-
-  //document.getElementById('defConstG').value = appStatus.configuration.G;  
-
-  if(appStatus.moduleConfig!=null) {
-    appStatus.moduleConfig.forEach(
-      (elem) => {
-        document.getElementById(elem.elemDefId).value = appStatus.configuration[elem.propDefName];  
-      });
-  }
 
 }
 
 function closeConfig(appStatus) {
-  var n = Number(document.getElementById('defElastCoeff').value);
-  if(!isNaN(n)) {
-    appStatus.configuration.elastCoeff = n;
-  }
 
-  appStatus.configuration.accelVisible = document.getElementById('accVis').checked;
+
+  appStatus.currentConfiguration.accelVisible = document.getElementById('accVis').checked;
   
-  n = Number(document.getElementById('accMagn').value);
+  n = Number($('#accMagn').val());
   if(!isNaN(n)) {
-    appStatus.configuration.displayFactorAccel = n;
+    appStatus.currentConfiguration.displayFactorAccel = n;
   }
 
-  appStatus.configuration.speedVisible = document.getElementById('spdVis').checked;
+  appStatus.currentConfiguration.speedVisible = document.getElementById('spdVis').checked;
 
-  n = Number(document.getElementById('spdMagn').value);
+  n = Number($('#spdMagn').val());
   if(!isNaN(n)) {
-    appStatus.configuration.displayFactorSpeed = n;
+    appStatus.currentConfiguration.displayFactorSpeed = n;
   }
 
-  appStatus.configuration.accColor = document.getElementById('accColor').value;
-  appStatus.configuration.spdColor = document.getElementById('spdColor').value;
-  appStatus.configuration.shadow = document.getElementById('shadowsVis').checked;
+  appStatus.currentConfiguration.accColor = $('#accColor').val();
+  appStatus.currentConfiguration.spdColor = $('#spdColor').val();
+  appStatus.currentConfiguration.shadow = document.getElementById('shadowsVis').checked;
 
-  /*
-  n = Number(document.getElementById('defConstG').value);
-  if(!isNaN(n)) {
-    appStatus.configuration.G = n;
-  }
-  */
-
-  if(appStatus.moduleConfig!=null) {
-    appStatus.moduleConfig.forEach(
-      (elem) => {
-        var v = document.getElementById(elem.elemDefId).value;
-        if(typeof appStatus.configuration[elem.propDefName] === "number")
+  if(appStatus.modulePropertyDefinitions!=null) {
+    appStatus.modulePropertyDefinitions.forEach(
+      (propDefinition) => {
+        var v = $('#' + PROPERTY_ID_PREFIX.currentValueIdPrefix + propDefinition.propName).val();
+        if(typeof appStatus.currentConfiguration.systemProperties[propDefinition.propName] === "number")
           v = Number(v);
-        appStatus.configuration[elem.propDefName] = v;  
+        appStatus.currentConfiguration.systemProperties[propDefinition.propName] = v;  
       });
-  }  
+  }
 
-
-
-  localStorage.setItem("config", JSON.stringify(appStatus.configuration));
+  localStorage.setItem(appStatus.interactionName + "/config", JSON.stringify(appStatus.currentConfiguration));
   hideConfig(appStatus);
 }
 
 function resetConfig(appStatus) {
-  localStorage.removeItem("config");
-  appStatus.configuration.setDefault();
+  localStorage.removeItem(appStatus.interactionName + "/config");
+  appStatus.currentConfiguration.setDefault(appStatus.modulePropertyDefinitions);
   refreshConfig(appStatus);
   closeConfig(appStatus);
 }
@@ -148,51 +188,55 @@ function showSysConfig(appStatus) {
   if(appStatus.animationOn)
     return;
 
-  var modal = document.getElementById("modalSysConfig");
-  modal.style.display = "block";
+  // var modal = document.getElementById("modalSysConfig");
+  // modal.style.display = "block";
+  $('#modalSysConfig').show();
   refreshSysConfig(appStatus);
 }
 
 function refreshSysConfig(appStatus) {
-  document.getElementById('elastCoeff').value = appStatus.currentSystem.config.elastCoeff;
-  //document.getElementById('constG').value = appStatus.currentSystem.config.G;
 
-  appStatus.moduleConfig.forEach((elem)=>{
-    document.getElementById(elem.elemId).value = appStatus.currentSystem.config[elem.propName];
+  systemPropertyDefinitions.forEach((elem)=>{
+    $('#' + PROPERTY_ID_PREFIX.systemValueIdPrefix + elem.propName).val(appStatus.currentSystem.config.systemProperties[elem.propName]);
+  });
+
+  appStatus.modulePropertyDefinitions.forEach((elem)=>{
+    $('#' + PROPERTY_ID_PREFIX.systemValueIdPrefix + elem.propName).val(appStatus.currentSystem.config.systemProperties[elem.propName]);
   });
 }
 
 function closeSysConfig(appStatus) {
-  var n = Number(document.getElementById('elastCoeff').value);
-  if(!isNaN(n)) {
-    appStatus.currentSystem.config.elastCoeff = n;
-  }
 
-  /*n = Number(document.getElementById('constG').value);
-  if(!isNaN(n)) {
-    appStatus.currentSystem.config.G = n;
-  }*/
 
-  if(appStatus.moduleConfig!=null) {
-    appStatus.moduleConfig.forEach(
+  systemPropertyDefinitions.forEach(
+    (elem) => {
+      var v = $('#' + PROPERTY_ID_PREFIX.systemValueIdPrefix + elem.propName).val();
+      if(elem.propType  === "number")
+        v = Number(v);
+      appStatus.currentSystem.config.systemProperties[elem.propName] = v;  
+    });
+
+
+  if(appStatus.modulePropertyDefinitions) {
+    appStatus.modulePropertyDefinitions.forEach(
       (elem) => {
-        var v = document.getElementById(elem.elemId).value;
-        if(typeof appStatus.configuration[elem.propName] === "number")
+        var v = $('#' + PROPERTY_ID_PREFIX.systemValueIdPrefix + elem.propName).val();
+        if(elem.propType === "number")
           v = Number(v);
-        appStatus.currentSystem.config[elem.propName] = v;  
+        appStatus.currentSystem.config.systemProperties[elem.propName] = v;  
       });
   }
   hideSysConfig(appStatus);
 }
 
 function resetSysConfig(appStatus) {
-  appStatus.currentSystem.config = appStatus.currentSystem.defaultConfig;
+  // TODO:
+  //appStatus.currentSystem.config = appStatus.currentSystem.defaultConfig;
   hideSysConfig(appStatus);
 }
 
 function hideSysConfig(appStatus) {
-  var modal = document.getElementById("modalSysConfig");
-  modal.style.display = "none";
+  $("#modalSysConfig").hide();
 }
 
 module.exports = {
@@ -206,5 +250,7 @@ module.exports = {
   resetSysConfig,
   showConfig,
   showSysConfig,
-  Configuration
+  systemPropertyDefinitions,
+  Configuration,
+  SystemProperty
 }
