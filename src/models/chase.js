@@ -1,6 +1,10 @@
+const configModule = require('../config.js');
+
 const interactionTitle = "PID Control simulation";
 const interactionName = "pidctrl";
 const interactionVersion = "1";
+
+const interactionExtraConfigurationLabel = "Chaser Extra Configuration";
 
 var prevErr= NaN;
 var sumErr= 0;
@@ -9,7 +13,7 @@ const MAX_I = 10;
 var TAU=100;
 var tau = Number.NEGATIVE_INFINITY;
 
-function interactFunction(o1,o2,config,systemConfig) {
+function interactFunction(o1,o2,config) {
 
     var hunter = null;
     var prey = null;
@@ -46,9 +50,9 @@ function interactFunction(o1,o2,config,systemConfig) {
     var a = 0; 
     
     // Costanti PID
-    var Kp = 0.01; // 0.1;
-    var Kd = 0.01;
-    var Ki = 0.0001;
+    var Kp = config.systemProperties.Kp; // 0.01; // 0.1;
+    var Kd = config.systemProperties.Kd; // 0.01;
+    var Ki = config.systemProperties.Ki; // 0.0001;
     // Proportional
     a = Kp * e;
 
@@ -83,33 +87,53 @@ function interactFunction(o1,o2,config,systemConfig) {
 
 
 
-const extraConfigurationRows = [];
+var moduleConfigDefinition = [
+    new configModule.SystemProperty(
+    { 
+    propName: 'Kp'
+    , defValue: 0.01
+    , labelForDefaultValue: "Default Linear error factor"
+    , labelForSystemValue: "Linear error factor"
+    , maxlength: 8
+    }),
+    new configModule.SystemProperty(
+    { 
+    propName: 'Kd'
+    , defValue: 0.01
+    , labelForDefaultValue: "Default Derivative error factor"
+    , labelForSystemValue: "Derivative error factor"
+    , maxlength: 8
+    }),
+    new configModule.SystemProperty(
+    { 
+    propName: 'Ki'
+    , defValue: 0.0001
+    , labelForDefaultValue: "Default Integral error factor"
+    , labelForSystemValue: "Integral error factor"
+    , maxlength: 8
+    })        
 
-const extraSystemConfRows = [];
+];
 
 function buildDemoSystems(centerX, centerY) {
 
     return {
     "name1": {
-    config: {G: 0.01,elastCoeff:0.95},
+    config: {systemProperties: {Kp: 0.01, Kd: 0.01, Ki: 0.0001, elastCoeff:0.95}},
     bodiesAttr: [
       {"id":"B0000","name":"hunter","x":20,"y":20,"ax":0,"ay":0,"dx":0,"dy":0,"density":1,"index":0,"radius":10,"motionless":false,"color":"red"}
       ,{"id":"B0001","name":"prey", "x":centerX,"y":centerY/2,"ax":0,"ay":0.01,"dx":2,"dy":0,"density":1,"index":1,"radius":10,"motionless":false,"color":"lightblue"}
-    ],
-    bodies : [],
-    gbodies : []
+    ]
     }
     };
 }
 
-var moduleConfig = [];
-  
+ 
 
 module.exports = {interactFunction
     , interactionName
     , interactionTitle
     , interactionVersion
-    , extraConfigurationRows
-    , extraSystemConfRows
-    , moduleConfig
+    , moduleConfigDefinition
+    , interactionExtraConfigurationLabel
     , buildDemoSystems};
