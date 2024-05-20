@@ -208,7 +208,7 @@ function confirmBodyEdit() {
       ,motionless: motionless
     };
 
-    var body = createNewBody(attr);
+    var body = createNewBody(attr, appStatus.currentConfiguration);
     addNewBodyToCanvas(body);
     addToBodyList(body, body.index);
   }
@@ -282,8 +282,8 @@ function cancelBodyEdit() {
 
 }
 
-function createNewBody(attributes) {
-  var body1 = new Body(attributes, world, appStatus.currentConfiguration);
+function createNewBody(attributes, configuration) {
+  var body1 = new Body(attributes, world, configuration);
   appStatus.currentSystem.bodies.push(body1);
   return body1;
 }
@@ -710,7 +710,7 @@ function changeSystem() {
 
   if(appStatus.currentSystem.bodiesAttr.length>0) {
     for(var conf of appStatus.currentSystem.bodiesAttr) {
-      var body = createNewBody(conf);  
+      var body = createNewBody(conf, appStatus.currentConfiguration);  
       addNewBodyToCanvas(body);
     }
     appStatus.currentSystem.bodiesAttr = [];
