@@ -12,10 +12,10 @@ const configModule = require('./config.js');
 const bodyModule = require('./body.js');
 const utilModule = require('./util.js');
 const physModule = require('./phys');
-const interactionModuleChase = require('./models/chase'); // require('./grav');
-const interactionModuleGrav = require('./models/grav'); // require('./grav');
+const interactionModuleChase = require('./models/chase');
+const interactionModuleGrav = require('./models/grav');
 
-const version = "0.4.0-alpha";
+const version = "0.5.0-alpha";
 
 const BODYROW_CLASSNAME = 'bodyrow';
 
@@ -25,7 +25,7 @@ var System = bodyModule.System;
 var enableElem = utilModule.enableElem;
 
 
-// Physical mode loading
+// Physical module loading
 var interactionModule = interactionModuleGrav;
 var demoMode = false;
 
@@ -51,12 +51,9 @@ if(window.location.search) {
       }
     });
   }
-
-  //demoMode = window.location.search.indexOf('demo')>=0;
 }
 
 // Aliases
-const interactFunction = interactionModule.interactFunction;
 const moduleConfigDefinition = interactionModule.moduleConfigDefinition;
 
 /** A named collection of System() instances */
@@ -150,7 +147,7 @@ function setAnimation(on) {
 
 }
 
-function start() {
+function startAnimation() {
     if(!appStatus.animationOn)
     {
       setAnimation(true);
@@ -159,7 +156,7 @@ function start() {
     resetDone = false;
 }
 
-function stop() {
+function stopAnimation() {
   setAnimation(false);
   anim.stop();
 }
@@ -208,7 +205,7 @@ function confirmBodyEdit() {
       ,motionless: motionless
     };
 
-    var body = createNewBody(attr);
+    var body = createNewBody(attr, appStatus.currentConfiguration);
     addNewBodyToCanvas(body);
     addToBodyList(body, body.index);
   }
@@ -282,8 +279,8 @@ function cancelBodyEdit() {
 
 }
 
-function createNewBody(attributes) {
-  var body1 = new Body(attributes, world, appStatus.currentConfiguration);
+function createNewBody(attributes, configuration) {
+  var body1 = new Body(attributes, world, configuration);
   appStatus.currentSystem.bodies.push(body1);
   return body1;
 }
@@ -384,27 +381,6 @@ function addToBodyList(body, postion) {
   row.id = 'row' + postion;
   row.className = BODYROW_CLASSNAME;
 
-  // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
-  /*
-  var cell1 = row.insertCell(0); 
-  var cell2 = row.insertCell(1);
-  var cell3 = row.insertCell(2);
-  var cell4 = row.insertCell(3);
-  var cell5 = row.insertCell(4); //cell5.style = "width: 10%";
-  */
-
-  // Add some text to the new cells:
-  
-  /*
-  var templateHtml = `<td><span style="color: {{color}};" class="{{className}}">{{postion}}</span>`;
-  templateHtml += `<td>(<span id="x{{postion}}">{{x}}</span>,<span id="y{{postion}}">{{y}}</span>)`;
-  templateHtml += `<td>(<span id="sx{{postion}}">{{dx}}</span>,<span id="sy{{postion}}">{{dy}}</span>)`;
-  templateHtml += `<td>(<span id="ax{{postion}}">{{ax}}</span>,<span id="ay{{postion}}">{{ay}}</span>)`;
-  templateHtml += `<td><button id="removeBtn{{postion}}" class="body-list-button"><i class="fa fa-trash"></button>`;
-  templateHtml += `<td><button id="changeBtn{{postion}}" class="body-list-button"><i class="fa fa-pencil-square" aria-hidden="true"></i></button>`;
-  */
-  
-
   var params = {
     color: body.color,
     postion: postion,
@@ -413,17 +389,10 @@ function addToBodyList(body, postion) {
     ax: body._ax, ay: body._ay,
     dx: body._dx, dy: body._dy
   };
-  
-  //console.log(template(params));
+ 
+
   row.innerHTML = bodyrow_template(params);
-/*
-  row.appendChild($(`<td><span style="color: ${color};" class="bodyNameList${body.motionless?'Motionless':''}">${postion}</span></td>`)[0]);
-  row.appendChild($(`<td>(<span id="x${postion}">${body._x}</span>,<span id="y${postion}">${body._y}</span>)</td>`)[0]);
-  row.appendChild($(`<td>(<span id="sx${postion}">${body._dx}</span>,<span id="sy${postion}">${body._dy}</span>)</td>`)[0]);
-  row.appendChild($(`<td>(<span id="ax${postion}">${body._ax}</span>,<span id="ay${postion}">${body._ay}</span>)</td>`)[0]);
-  row.appendChild($(`<td><button id="removeBtn${postion}" class="body-list-button"><i class="fa fa-trash"></button></td>`)[0]);
-  row.appendChild($(`<td><button id="changeBtn${postion}" class="body-list-button"><i class="fa fa-pencil-square" aria-hidden="true"></i></button></td>`)[0]);
-*/
+
   $(`#removeBtn${postion}`).on("click", function() {remove(postion, body.id)});
   $(`#changeBtn${postion}`).on("click", function() {change(postion, body.id)});
 
@@ -463,12 +432,10 @@ function change(position, id) {
   if(resetDone) {
     showInitBodyAttr(true);
     showBodyAttr(false);
-
   } else  {
     showInitBodyAttr(false);
     showBodyAttr(true);
   }
-
 
   document.getElementById("inRadius").value = attr.radius;
   document.getElementById("inAx").value = attr.ax;
@@ -481,28 +448,18 @@ function change(position, id) {
   document.getElementById("inDxIni").value = attr._dx;
   document.getElementById("inDyIni").value = attr._dy;
 
-
   document.getElementById("inDensity").value = attr.density;
   document.getElementById("inColor").value = gphbody.fill();
-  //utilModule.setCheckBox("inMotionless",attr.motionless);
+
   $('#nMotionless').prop("inMotionless", attr.motionless)
 
   enableElem("inColor", false);
-  /*
-  enableElem("inAx", false);
-  enableElem("inAy", false);
-  enableElem("inDx", false);
-  enableElem("inDy", false);
-  */
 
  var modal = document.getElementById("bodyattributes");
  modal.style.display = "block";
  appStatus.inEdit = true;
  enableElem("startBtn",false);
  enableElem("stopBtn", false);
-
-
-
 }
 
 function remove(position, id) {
@@ -597,7 +554,6 @@ function addNew() {
     newSystem(callback);
   else
     callback();
-
 }
 
 function refreshDisplayedBodyData(body) {
@@ -610,7 +566,6 @@ function refreshDisplayedBodyData(body) {
 
   $("#ax" + body.index).text(Number(body.ax).toFixed(3));
   $("#ay" + body.index).text(Number(body.ay).toFixed(3));   
-
 }
 
 function loadSystemsFromLocalStorage() {
@@ -710,7 +665,7 @@ function changeSystem() {
 
   if(appStatus.currentSystem.bodiesAttr.length>0) {
     for(var conf of appStatus.currentSystem.bodiesAttr) {
-      var body = createNewBody(conf);  
+      var body = createNewBody(conf, appStatus.currentConfiguration);  
       addNewBodyToCanvas(body);
     }
     appStatus.currentSystem.bodiesAttr = [];
@@ -857,8 +812,8 @@ function initGraphicElements() {
   $('#resetBtn').on("click", reset);
   $('#loadBtn').on("click", loadSystemsFromLocalStorage);
   $('#saveBtn').on("click", saveSystemToLocalStorage);
-  $('#startBtn').on("click", start);
-  $('#stopBtn').on("click", stop);
+  $('#startBtn').on("click", startAnimation);
+  $('#stopBtn').on("click", stopAnimation);
 
   $('#newSystemBtn').on("click", newSystem);
   $('#removeSystemBtn').on("click", removeSystem);
@@ -930,7 +885,7 @@ function initGraphicElements() {
   
   if(demoMode) {
     loadSystemsFromLocalStorage();
-    start();
+    startAnimation();
   }
 }
 
@@ -989,14 +944,14 @@ function animationFunction(frame) {
 
   var bodies = appStatus.currentSystem.bodies;
   var gbodies = appStatus.currentSystem.gbodies;
-  physModule.collisionManagement(bodies, stop);
+  physModule.collisionManagement(bodies, stopAnimation);
   if(appStatus.animationOn)
   {
 
     for(var i=0;i<bodies.length;i++)
       bodies[i].prepareForInteract();
 
-    physModule.interaction(bodies, appStatus.currentConfiguration, appStatus.currentSystem.config, interactFunction);
+    physModule.interaction(bodies, appStatus.currentConfiguration, appStatus.currentSystem.config, interactionModule.interactFunction);
 
     for(var b=0;b<bodies.length;b++)
     {

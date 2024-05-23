@@ -214,7 +214,7 @@ function System(name, config) {
         if(grpbody.spd) grpbody.spd.destroy();
       }
     )
-    //this.bodies = [];
+
     this.gbodies = [];
   }
 

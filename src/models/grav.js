@@ -30,36 +30,28 @@ function interactFunction(o1, o2, config) {
     if(y<0) fy2= - fy2; o2.ay += fy2;
 };
 
-
-
-// const extraConfigurationRows = [
-//     '<td><label>Attraction Configuration:</label></td>',
-//     '<td><label>Default G constant:</label></td><td><input type=text id=defConstG maxlength="4" style="width: 2em"></td>'
-// ];
-
-// const extraSystemConfRows = [
-//     '<td><label>G const:</label></td><td><input type=text id=constG maxlength="4" style="width: 2em"></td>'
-// ];
-
-
 function buildDemoSystems(centerX, centerY) {
     return {
     "System1": {
-    config: {G: 0.01},
+    config: {
+        systemProperties:  {G: 0.01, elastCoeff: 1}
+    },
     bodiesAttr: [
-        {"id":"B0000","x":centerX,"y":centerY,"ax":0,"ay":0,"dx":0,"dy":0,"density":1,"index":0,"radius":20,"motionless":false,"color":"yellow"}
-        ,{"id":"B0001","x":centerX,"y":centerY/4,"ax":0,"ay":0,"dx":2,"dy":0,"density":1,"index":1,"radius":10,"motionless":false,"color":"lightblue"}
+        {"id":"B0001","x":centerX,"y":centerY,"ax":0,"ay":0,"dx":0,"dy":0,"density":1,"index":0,"radius":20,"motionless":false,"color":"yellow"}
+        ,{"id":"B0002","x":centerX,"y":centerY/4,"ax":0,"ay":0,"dx":2,"dy":0,"density":1,"index":1,"radius":10,"motionless":false,"color":"lightblue"}
     ],
-    bodies : [],
-    gbodies : []
+//    bodies : [],
+//    gbodies : []
     },
     "System2" : {
-        config: {G: 0.01},
+        config: {
+            systemProperties:  {G: 0.01, elastCoeff: 1}
+        },
         bodiesAttr: [
-        {"id":"B0000","x":centerX,"y":centerY,"ax":0,"ay":0,"dx":0,"dy":0,"density":1,"index":0,"radius":20,"motionless":false,"color":"pink"}
-        ,{"id":"B0001","x":centerX,"y":centerY/4,"ax":0,"ay":0,"dx":2,"dy":0,"density":1,"index":1,"radius":10,"motionless":false,"color":"blue"}],
-        bodies : [],
-        gbodies : []
+        {"id":"B0001","x":centerX,"y":centerY,"ax":0,"ay":0,"dx":0,"dy":0,"density":1,"index":0,"radius":20,"motionless":false,"color":"pink"}
+        ,{"id":"B0002","x":centerX,"y":centerY/4,"ax":0,"ay":0,"dx":2,"dy":0,"density":1,"index":1,"radius":10,"motionless":false,"color":"blue"}],
+//        bodies : [],
+//        gbodies : []
     }
     };
 }
