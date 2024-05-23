@@ -103,9 +103,9 @@ fitStageIntoParentContainer();
 // adapt the stage on any window resize
 window.addEventListener('resize', fitStageIntoParentContainer);
 
-var demoSystems = interactionModule.buildDemoSystems(centerX, centerY);
+const demoSystems = interactionModule.buildDemoSystems(centerX, centerY);
 
-var appStatus = {
+const appStatus = {
   animationOn: false,
   inAddNew: false,
   inEdit: false,
@@ -144,7 +144,6 @@ function setAnimation(on) {
   for (let btn of btns) {
     enableElem(btn, !appStatus.animationOn);
   }
-
 }
 
 function startAnimation() {
@@ -188,7 +187,6 @@ function confirmBodyEdit() {
   var dx = 0;
   var dy = 0;
 
-
   if(appStatus.inAddNew) {
 
     ax = Number($("#inAxIni").val());
@@ -205,7 +203,8 @@ function confirmBodyEdit() {
       ,motionless: motionless
     };
 
-    var body = createNewBody(attr, appStatus.currentConfiguration);
+    var body = new Body(attr, world, appStatus.currentConfiguration);
+    appStatus.currentSystem.bodies.push(body);
     addNewBodyToCanvas(body);
     addToBodyList(body, body.index);
   }
@@ -279,12 +278,11 @@ function cancelBodyEdit() {
 
 }
 
-function createNewBody(attributes, configuration) {
-  var body1 = new Body(attributes, world, configuration);
-  appStatus.currentSystem.bodies.push(body1);
-  return body1;
-}
 
+/**
+ * Create a new graphical body (Konva.Circle) base on the physical body passed in
+ * @param {*} body the physhical body
+ */
 function addNewBodyToCanvas(body) {
 
   var grpbody1 = new Konva.Circle({
@@ -665,7 +663,8 @@ function changeSystem() {
 
   if(appStatus.currentSystem.bodiesAttr.length>0) {
     for(var conf of appStatus.currentSystem.bodiesAttr) {
-      var body = createNewBody(conf, appStatus.currentConfiguration);  
+      var body = new Body(conf, world, appStatus.currentConfiguration);  
+      appStatus.currentSystem.bodies.push(body);
       addNewBodyToCanvas(body);
     }
     appStatus.currentSystem.bodiesAttr = [];
