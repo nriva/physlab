@@ -36,13 +36,15 @@ function lineThroughPoints(point1, point2) {
     // Restituiamo i coefficienti (pendenzaPerpendicolare, intercettaY)
     return [slope, yIntercept];
   }
+
+  function angleAdjacent(v1, v2) {
+    const scalarPro = scalarProduct(v1, v2);
+    return Math.acos(scalarPro / vector_mod(v1) * vector_mod(v2));
+  }
   
-  // Esempio di utilizzo
-  const punto = [2, 3];
-  const rettaData = [1, 2]; // Retta con coefficiente angolare 1
-  
-  const coefficientiPerpendicolare = orthogonalLineByPoint(punto, rettaData);
-  console.log("Coefficienti della retta perpendicolare:", coefficientiPerpendicolare); // [-1, 1]
+  function scalarProduct(v1, v2) {
+    return v1[0] * v2[0] + v1[1] * v2[1];
+  }
 
   function vectorComponents(vector, ax1, ax2) {
     // Controlliamo se i vettori asseX e asseY sono perpendicolari
@@ -61,15 +63,7 @@ function lineThroughPoints(point1, point2) {
     return [projection1, projection2];
   }
   
-  // Esempio di utilizzo
-  const vettore = [3, 4];
-  const asseX = [1, 0]; // Asse X (orizzontale)
-  const asseY = [0, 1]; // Asse Y (verticale)
-  
-  const componenti = vectorComponents(vettore, asseX, asseY);
-  console.log("Componenti del vettore sugli assi:", componenti); // [3.0, 4.0]
-
-  /**
+    /**
    * Angle of aline with the cartesian axis X.
    * @param {*} slope slope of the line
    * @returns 
@@ -112,17 +106,12 @@ function polarToCartesian(ray, angle) {
   return [x, y];
 }
   
-// Esempio di utilizzo
-const raggio = 5;
-const angoloGradi = 30; // Angolo in gradi
-
-const angoloRadianti = toRadiants(angoloGradi);
-
-const coordinateCartesiane = polarToCartesian(raggio, angoloRadianti);
-console.log("Coordinate cartesiane:", coordinateCartesiane); // [2.5, 4.33]
-
 function toRadiants(angoloGradi) {
   return angoloGradi * (Math.PI / 180);
+}
+
+function toGrad(angle) {
+  return (angle * 180) /Math.PI;
 }
 
 function line(l,x) {
@@ -157,11 +146,12 @@ console.log(`angoloConAsseX(${l_o[0]}) =`, angle);
 var v2 = polarToCartesian(1, angle)
 console.log(v2);
 
-const scalarProduct = v1[0] * v2[0] + v1[1] * v2[1];
-console.log(`scalar product = ${Math.round(scalarProduct,5)}`)
+const scalarPro = scalarProduct(v1, v2);
+console.log(`scalar product = ${Math.round(scalarPro,5)}`)
 
+const angle_ = angleAdjacent(v1, v2);
+console.log(`angle_ = ${toGrad(angle_)}`)
 
+vc = vectorComponents([10,10], v1, v2);
+console.log(vc);
 
-
-
-  
