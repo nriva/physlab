@@ -14,15 +14,17 @@ const utilModule = require('./util.js');
 const physModule = require('./phys');
 const interactionModuleChase = require('./models/chase');
 const interactionModuleGrav = require('./models/grav');
+const GraphicEnvironment = require('./graphics').GraphicEnvironment;
 
 const version = "0.5.0-alpha";
 
 const BODYROW_CLASSNAME = 'bodyrow';
 
 // Aliases
-var Body = bodyModule.Body;
-var System = bodyModule.System;
-var enableElem = utilModule.enableElem;
+const Body = bodyModule.Body;
+const System = bodyModule.System;
+const enableElem = utilModule.enableElem;
+const setCheckBox = utilModule.setCheckBox;
 
 
 // Physical module loading
@@ -61,61 +63,42 @@ var systems = {};
 /** Body index under edit in current system */
 var currentBodyIndexUnderEdit = -1;
 
-var world = { width: window.innerWidth,  height: window.innerHeight /*-10*/ };
-//var world = { width: 3000,  height: 2000 };
+const graphicEnvironment = new GraphicEnvironment(window);
 
-var stage = new Konva.Stage({
-    container: 'container',
-    width: world.width,
-    height: world.height
-});
-
-var layer = new Konva.Layer();
-stage.add(layer);
-
-var centerX = stage.getWidth() / 2;
-var centerY = stage.getHeight() / 2;
-
-function fitStageIntoParentContainer() {
-  var container = document.getElementById('stage-parent');
-
-  // now we need to fit stage into parent
-  var containerWidth = container.offsetWidth;
-  var containerHeight = container.offsetHeight;
-  // to do this we need to scale the stage
-  //var scale = containerWidth / world.width;
-
-  stage.width( containerWidth /* world.width * scale*/);
-  stage.height(containerHeight);
-
-  world.width = containerWidth;
-  world.height = containerHeight;
-
-  //stage.scale({ x: scale, y: scale });
-  stage.draw();
-
-  centerX = stage.getWidth() / 2;
-  centerY = stage.getHeight() / 2;
-
-}
-
-fitStageIntoParentContainer();
+graphicEnvironment.fitStageIntoParentContainer();
 // adapt the stage on any window resize
-window.addEventListener('resize', fitStageIntoParentContainer);
+window.addEventListener('resize', function() { graphicEnvironment.fitStageIntoParentContainer()});
 
-const demoSystems = interactionModule.buildDemoSystems(centerX, centerY);
+const demoSystems = interactionModule.buildDemoSystems(graphicEnvironment.centerX, graphicEnvironment.centerY);
 
-const appStatus = {
-  animationOn: false,
-  inAddNew: false,
-  inEdit: false,
-  inConfig: false,
-  currentSystem: null,
-  currentConfiguration: null,
-  interactionName: "",
-  modulePropertyDefinitions : [],
-  isEditing : function() { return this.inAddNew || this.inEdit; }
+function ApplicationStatus() {
+
+  this.animationOn = false;
+  this.inAddNew = false;
+  this.inEdit = false;
+  this.inConfig = false;
+  this.currentSystem = null;
+  this.currentConfiguration = null;
+  this.interactionName = "";
+  this.modulePropertyDefinitions = [];
+
+  this.isEditing = function() { 
+    return this.inAddNew || this.inEdit; 
+  }
+
+  this.setAnimation = function (on) {
+    appStatus.animationOn = on;
+  
+    $('.toolbar-edit-btn').prop('disabled', appStatus.animationOn);
+    $('.body-list-button').prop('disabled', appStatus.animationOn);
+    $('.sys-edit-btn').prop('disabled', appStatus.animationOn);
+
+  }
 }
+
+
+
+const appStatus = new ApplicationStatus();
 
 appStatus.modulePropertyDefinitions = interactionModule.moduleConfigDefinition;
 
@@ -128,35 +111,19 @@ var bodyrow_templateHtml = $("#bodyrow-template").html();
 var bodyrow_template = Handlebars.compile(bodyrow_templateHtml);
 
 
-function setAnimation(on) {
-  appStatus.animationOn = on;
 
-  var btns = document.getElementsByClassName('toolbar-edit-btn');
-  for (let btn of btns)
-    enableElem(btn, !appStatus.animationOn);
-
-  btns = document.getElementsByClassName('body-list-button');
-  for (let btn of btns) {
-    enableElem(btn, !appStatus.animationOn);
-  }
-
-  btns = document.getElementsByClassName('sys-edit-btn');
-  for (let btn of btns) {
-    enableElem(btn, !appStatus.animationOn);
-  }
-}
 
 function startAnimation() {
     if(!appStatus.animationOn)
     {
-      setAnimation(true);
+      appStatus.setAnimation(true);
       anim.start();
     }
     resetDone = false;
 }
 
 function stopAnimation() {
-  setAnimation(false);
+  appStatus.setAnimation(false);
   anim.stop();
 }
 
@@ -171,7 +138,7 @@ function reset() {
     if(appStatus.currentSystem.gbodies[i].acc) appStatus.currentSystem.gbodies[i].acc.points([0,0,0,0]);
     refreshDisplayedBodyData(appStatus.currentSystem.bodies[i]);
   }
-  stage.draw();
+  graphicEnvironment.stage.draw();
   resetDone = true;
 }
   
@@ -180,6 +147,7 @@ function confirmBodyEdit() {
   var radius = Number($("#inRadius").val());
   var density = Number($("#inDensity").val());
   var color = $("#inColor").val();
+  //var motionless = $("#inMotionless").prop('checked')==true; jquery doesn't seem to work
   var motionless = document.getElementById("inMotionless").checked==true;
 
   var ax = 0;
@@ -194,7 +162,7 @@ function confirmBodyEdit() {
     dx = Number($("#inDxIni").val());
     dy = Number($("#inDyIni").val());
     var attr = {index: appStatus.currentSystem.bodies.length
-      ,x: centerX ,y: centerY
+      ,x: graphicEnvironment.centerX ,y: graphicEnvironment.centerY
       ,dx: dx, dy: dy
       ,ax: ax, ay: ay
       ,density: density
@@ -203,7 +171,7 @@ function confirmBodyEdit() {
       ,motionless: motionless
     };
 
-    var body = new Body(attr, world, appStatus.currentConfiguration);
+    var body = new Body(attr, graphicEnvironment.world, appStatus.currentConfiguration);
     appStatus.currentSystem.bodies.push(body);
     addNewBodyToCanvas(body);
     addToBodyList(body, body.index);
@@ -242,12 +210,12 @@ function confirmBodyEdit() {
     if(body!=null)
       refreshDisplayedBodyData(body);
   }
-  cancelBodyEdit();
-  stage.draw();
+  closeBodyEditor();
+  graphicEnvironment.stage.draw();
   
 }
 
-function cancelBodyEdit() {
+function closeBodyEditor() {
   appStatus.inAddNew = false;
   appStatus.inEdit = false;
 
@@ -267,8 +235,8 @@ function cancelBodyEdit() {
   $("#inDyIni").val("0");
   $("#inDensity").val("1");
   $("#inColor").val("#FFFFFF");
-  //setCheckBox("inMotionless", false);
-  $("#inMotionless").prop("checked", false);
+  setCheckBox("inMotionless", false);
+  //$("#inMotionless").prop("checked", false);
 
   enableElem("inColor",true);
   enableElem("inAx",true);
@@ -302,7 +270,7 @@ function addNewBodyToCanvas(body) {
     grpbody1.shadowBlur(10);
   }
 
-  layer.add(grpbody1);
+  graphicEnvironment.layer.add(grpbody1);
 
   var acc1 = null;
   acc1 = new Konva.Line({
@@ -310,7 +278,7 @@ function addNewBodyToCanvas(body) {
     stroke: appStatus.currentConfiguration.accColor,
     draggable: false
   });
-  layer.add(acc1);
+  graphicEnvironment.layer.add(acc1);
   acc1.visible(appStatus.currentConfiguration.accelVisible);
     
 
@@ -320,7 +288,7 @@ function addNewBodyToCanvas(body) {
     stroke: appStatus.currentConfiguration.spdColor,
     draggable: false
   });
-  layer.add(spd1);
+  graphicEnvironment.layer.add(spd1);
   spd1.visible(appStatus.currentConfiguration.speedVisible);
 
   appStatus.currentSystem.gbodies.push({body:grpbody1,acc:acc1,spd:spd1});
@@ -356,7 +324,7 @@ function editBody(attr) {
   graphbody.radius(attr.radius);
 
   currentBodyIndexUnderEdit = -1;
-  cancelBodyEdit();
+  closeBodyEditor();
   refreshButtons();
   return body;
 }
@@ -420,7 +388,6 @@ function change(position, id) {
 
   var body = appStatus.currentSystem.bodies[idx];
   var attr = body.getAttributes();
-
   var gphbody = appStatus.currentSystem.gbodies[idx].body;
 
 
@@ -435,26 +402,26 @@ function change(position, id) {
     showBodyAttr(true);
   }
 
-  document.getElementById("inRadius").value = attr.radius;
-  document.getElementById("inAx").value = attr.ax;
-  document.getElementById("inAy").value  = attr.ay;
-  document.getElementById("inDx").value = attr.dx;
-  document.getElementById("inDy").value = attr.dy;
+  $("#inRadius").val(attr.radius);
+  $("#inAx").val(attr.ax);
+  $("#inAy").val(attr.ay);
+  $("#inDx").val(attr.dx);
+  $("#inDy").val(attr.dy);
 
-  document.getElementById("inAxIni").value = attr._ax;
-  document.getElementById("inAyIni").value  = attr._ay;
-  document.getElementById("inDxIni").value = attr._dx;
-  document.getElementById("inDyIni").value = attr._dy;
+  $("#inAxIni").val(attr._ax);
+  $("#inAyIni").val(attr._ay);
+  $("#inDxIni").val(attr._dx);
+  $("inDyIni").val(attr._dy);
 
-  document.getElementById("inDensity").value = attr.density;
-  document.getElementById("inColor").value = gphbody.fill();
+  $("#inDensity").val(attr.density);
+  $("#inColor").val(gphbody.fill());
 
-  $('#nMotionless').prop("inMotionless", attr.motionless)
+  //$('#inMotionless').prop("checked", attr.motionless);
+  utilModule.setCheckBox('inMotionless',attr.motionless);
 
   enableElem("inColor", false);
 
- var modal = document.getElementById("bodyattributes");
- modal.style.display = "block";
+ $("#bodyattributes").show();
  appStatus.inEdit = true;
  enableElem("startBtn",false);
  enableElem("stopBtn", false);
@@ -499,7 +466,7 @@ function remove(position, id) {
     //body.spd.visible(false); 
     if(grpbody.spd) grpbody.spd.destroy();
 
-    layer.draw();
+    graphicEnvironment.layer.draw();
   }
 }
 
@@ -542,8 +509,7 @@ function addNew() {
     enableElem("inDxIni", true);
     enableElem("inDyIni", true);
 
-    var modal = document.getElementById("bodyattributes");
-    modal.style.display = "block";
+    $("#bodyattributes").show();
     appStatus.inAddNew = true;
 
   }
@@ -604,7 +570,7 @@ function doLoad(initSystems) {
 
     if(added)
       changeSystem();
-    stage.draw();
+    graphicEnvironment.stage.draw();
   }
 }
     
@@ -652,7 +618,7 @@ function changeSystem() {
   clearBodyList();
   if(typeof appStatus.currentSystem != "undefined" && appStatus.currentSystem != null) {
     appStatus.currentSystem.clearAllBodies();
-    stage.draw();
+    graphicEnvironment.stage.draw();
   }
 
   var systemName = document.getElementById('systemName').value;
@@ -663,7 +629,7 @@ function changeSystem() {
 
   if(appStatus.currentSystem.bodiesAttr.length>0) {
     for(var conf of appStatus.currentSystem.bodiesAttr) {
-      var body = new Body(conf, world, appStatus.currentConfiguration);  
+      var body = new Body(conf, graphicEnvironment.world, appStatus.currentConfiguration);  
       appStatus.currentSystem.bodies.push(body);
       addNewBodyToCanvas(body);
     }
@@ -679,7 +645,7 @@ function changeSystem() {
   for(var body of appStatus.currentSystem.bodies) {
     addToBodyList(body,postion++);
   }
-  stage.draw();
+  graphicEnvironment.stage.draw();
 
 }
 
@@ -805,7 +771,7 @@ function initGraphicElements() {
 
 
   span = document.getElementById("closeBodyAttributes");
-  span.onclick = cancelBodyEdit;
+  span.onclick =  closeBodyEditor;
 
   $('#addNewBtn').on("click", addNew);
   $('#resetBtn').on("click", reset);
@@ -820,7 +786,7 @@ function initGraphicElements() {
   document.getElementById('systemName').onchange=changeSystem;
 
   $('#confirmBodyEditBtn').on("click", confirmBodyEdit);
-  $('#cancelBodyEditBtn').on("click", cancelBodyEdit);
+  $('#cancelBodyEditBtn').on("click", closeBodyEditor);
 
   $('#downloadSysBtn').on("click", downloadCurrentSystem);
   $('#uploadSysBtn').on("click", startSystemUpload);
@@ -954,13 +920,13 @@ function animationFunction(frame) {
 
     for(var b=0;b<bodies.length;b++)
     {
-      bodies[b].move(world);
+      bodies[b].move(graphicEnvironment.world);
       refreshGrpBodyData(gbodies[b],bodies[b]);
     }
   }
 }
 
-var anim = new Konva.Animation(animationFunction, layer);
+var anim = new Konva.Animation(animationFunction, graphicEnvironment.layer);
 
 initGraphicElements();
 
