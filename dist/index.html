@@ -88,54 +88,86 @@
       <div class="modal-body">
 
         <table style="border: 0px; border-collapse: collapse;">
+
+          
+          <tr class="body-attr">
+            <td><label>Current Position:</label></td>
+            <td><i>x:</i></td>
+            <td><input type="text" id="inPosX" name="inPosX" value="0" size="5"></td>
+            <td><i>y:</i></td>
+            <td><input type="text" id="inPosY" name="inPosY" value="0" size="5"></td>
+            <td>&nbsp;</td>
+          </tr>
+
+          <tr class="init-body-attr hide">
+            <td><label>Initial Position:</label></td>
+            <td><i>x:</i></td>
+            <td><input type="text" id="inPosXIni" name="inPosXIni" value="0" size="5"></td>
+            <td><i>y:</i></td>
+            <td><input type="text" id="inPosYIni" name="inPosYIni" value="0" size="5"></td>
+            <td>&nbsp;</td>
+          </tr>          
           
           <tr>
-            <td><label id=lblRadius for=inRadius>Radius:</label></td>
+            <td><label id="lblRadius" for="inRadius">Radius:</label></td>
+            <td><i>r:</i></td>
             <td><input type="text" id=inRadius name=inRadius value="10" size="5"></td>
+            <td colspan="3">&nbsp;</td>
           </tr>
 
           <tr>
-            <td><label id=lblDensity for=inDensity>Density:</label></td>
-            <td><input type="text" id=inDensity name=inDensity value="1" size="5"></td>
+            <td><label id="lblDensity" for="inDensity">Density:</label></td>
+            <td><i>d:</i></td>
+            <td><input type="text" id="inDensity" name="inDensity" value="1" size="5"></td>
+            <td colspan="3">&nbsp;</td>
           </tr>
 
           <tr class="init-body-attr hide">
             <td><label>Initial Acceleration:</label></td>
-            <td><i class="fa fa-long-arrow-right" aria-hidden="true"></i><input type="text" id=inAxIni name=inAxIni value="0" size="5"></td>
-            <td><i class="fa fa-long-arrow-down" aria-hidden="true"></i><input type="text" id=inAyIni name=inAyIni value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-right" style="text-align: center;" aria-hidden="true"></i></td>
+            <td><input type="text" id=inAxIni name=inAxIni value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-down" style="text-align: center;" aria-hidden="true"></i></td>
+            <td><input type="text" id=inAyIni name=inAyIni value="0" size="5"></td>
             <td>Value for initial acceleration (use Small values ~0.01)</td>
           </tr>
 
           <tr class="body-attr">
             <td><label>Acceleration:</label></td>
-            <td><i class="fa fa-long-arrow-right" aria-hidden="true"></i><input type="text" id=inAx name=inAx value="0" size="5"></td>
-            <td><i class="fa fa-long-arrow-down" aria-hidden="true"></i><input type="text" id=inAy name=inAy value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-right" aria-hidden="true"></i></td>
+            <td><input type="text" id=inAx name=inAx value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-down" aria-hidden="true"></i></td>
+            <td><input type="text" id=inAy name=inAy value="0" size="5"></td>
             <td>Value for acceleration (use Small values ~0.01)</td>
           </tr>
 
           <tr class="init-body-attr hide">
             <td><label>Intial Speed:</label></td>
-            <td><i class="fa fa-long-arrow-right" aria-hidden="true"></i><input type="text" id=inDxIni name=inDxIni value="0" size="5"></td>
-            <td><i class="fa fa-long-arrow-down" aria-hidden="true"></i><input type="text" id=inDyIni name=inDyIi value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-right" aria-hidden="true"></i></td>
+              <td><input type="text" id=inDxIni name=inDxIni value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-down" aria-hidden="true"></i></td>
+              <td><input type="text" id=inDyIni name=inDyIi value="0" size="5"></td>
             <td>Values for initial speed (use values around 1)</td>
           </tr>
 
           <tr class="body-attr">
             <td><label>Speed:</label></td>
-            <td><i class="fa fa-long-arrow-right" aria-hidden="true"></i><input type="text" id=inDx name=inDx value="0" size="5"></td>
-            <td><i class="fa fa-long-arrow-down" aria-hidden="true"></i><input type="text" id=inDy name=inDy value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-right" aria-hidden="true"></i></td>
+            <td><input type="text" id=inDx name=inDx value="0" size="5"></td>
+            <td><i class="fa fa-long-arrow-down" aria-hidden="true"></i></td>
+            <td><input type="text" id=inDy name=inDy value="0" size="5"></td>
             <td>Values for speed (use values around 1)</td>
-          
           </tr>
 
           <tr>
             <td><label id=lblColor for="inColor">Color:</label></td>
-            <td><input type="color" id="inColor" name="inColor" value="#FFFFFF"></td>
+            <td colspan="2"><input type="color" id="inColor" name="inColor" value="#FFFFFF" width="100%"></td>
+            <td colspan="3">&nbsp;</td>
           </tr>
 
           <tr>
             <td><label id=lblMotionless for="inMotionless">Motionless:</label></td>
             <td><input type="checkbox" id="inMotionless" name="inMotionless" value="true"></td>
+            <td colspan="4">&nbsp;</td>
           </tr>
         </table>
       </div>

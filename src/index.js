@@ -16,7 +16,7 @@ const interactionModuleChase = require('./models/chase');
 const interactionModuleGrav = require('./models/grav');
 const GraphicEnvironment = require('./graphics').GraphicEnvironment;
 
-const version = "0.5.0-alpha";
+const version = "0.6.0-alpha";
 
 const BODYROW_CLASSNAME = 'bodyrow';
 
@@ -127,7 +127,7 @@ function stopAnimation() {
   anim.stop();
 }
 
-var resetDone = true;
+var resetDone = false;
 
 function reset() {
   for(var i=0;i<appStatus.currentSystem.bodies.length;i++) {
@@ -150,6 +150,8 @@ function confirmBodyEdit() {
   //var motionless = $("#inMotionless").prop('checked')==true; jquery doesn't seem to work
   var motionless = document.getElementById("inMotionless").checked==true;
 
+  var x = 0;
+  var y = 0;
   var ax = 0;
   var ay = 0;
   var dx = 0;
@@ -157,12 +159,14 @@ function confirmBodyEdit() {
 
   if(appStatus.inAddNew) {
 
+    x = Number($("#inPosXIni").val());
+    y = Number($("#inPosYIni").val());
     ax = Number($("#inAxIni").val());
     ay = Number($("#inAyIni").val());
     dx = Number($("#inDxIni").val());
     dy = Number($("#inDyIni").val());
     var attr = {index: appStatus.currentSystem.bodies.length
-      ,x: graphicEnvironment.centerX ,y: graphicEnvironment.centerY
+      ,x: graphicEnvironment.centerX, y: graphicEnvironment.centerY
       ,dx: dx, dy: dy
       ,ax: ax, ay: ay
       ,density: density
@@ -182,26 +186,29 @@ function confirmBodyEdit() {
     var attr = null;
 
     if(resetDone) {
-
+      x = Number($("#inPosXIni").val());
+      y = Number($("#inPosYIni").val());
       ax = Number($("#inAxIni").val());
       ay = Number($("#inAyIni").val());
       dx = Number($("#inDxIni").val());
       dy = Number($("#inDyIni").val());
+
 
       attr = {
         density: density, radius: radius, motionless: motionless
         , _ax: ax, _ay: ay, _dx: dx, _dy: dy
       };
     } else {
-
+      x = Number($("#inPosX").val());
+      y = Number($("#inPosY").val());
       ax = Number($("#inAx").val());
       ay = Number($("#inAy").val());
       dx = Number($("#inDx").val());
       dy = Number($("#inDy").val());
 
       attr = {
-        density: density, radius: radius, motionless: motionless
-        , ax: ax, ay: ay, dx: dx, dy: dy
+        density: density, radius: radius, motionless: motionless,
+        x: x, y: y, ax: ax, ay: ay, dx: dx, dy: dy
       };
   
     }
@@ -222,10 +229,13 @@ function closeBodyEditor() {
 //  var modal = document.getElementById("bodyattributes");
 //  modal.style.display = "none";
   $("#bodyattributes").hide();
+  $("#inPosX").val("0");
+  $("#inPosXIni").val("0");
+  $("#inPosY").val("0");
+  $("#inPosYIni").val("0");
 
   $("#inRadius").val("10");
   $("#inAx").val("0");
-  $("#inAy").val("0");
   $("#inAxIni").val("0");
   $("#inAy").val("0");
   $("#inAyIni").val("0");
@@ -239,6 +249,8 @@ function closeBodyEditor() {
   //$("#inMotionless").prop("checked", false);
 
   enableElem("inColor",true);
+  enableElem("inPosX",true);
+  enableElem("inPosY",true);
   enableElem("inAx",true);
   enableElem("inAy",true);
   enableElem("inDx",true);
@@ -322,6 +334,8 @@ function editBody(attr) {
   var graphbody = appStatus.currentSystem.gbodies[currentBodyIndexUnderEdit].body;
 
   graphbody.radius(attr.radius);
+  if(attr.x) graphbody.x(attr.x);
+  if(attr.y) graphbody.y(attr.y);
 
   currentBodyIndexUnderEdit = -1;
   closeBodyEditor();
@@ -403,6 +417,8 @@ function change(position, id) {
   }
 
   $("#inRadius").val(attr.radius);
+  $("#inPosX").val(attr.x);
+  $("#inPosY").val(attr.y);
   $("#inAx").val(attr.ax);
   $("#inAy").val(attr.ay);
   $("#inDx").val(attr.dx);
