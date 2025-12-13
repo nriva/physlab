@@ -9,7 +9,9 @@ module.exports = {
   },
   devtool: 'inline-source-map',
   devServer: {
-    contentBase: path.join(__dirname, 'dist'),
+    static : {
+      directory: path.join(__dirname, 'dist')
+    },
     compress: true,
     port: 8080
   },
